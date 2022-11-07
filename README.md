@@ -11,10 +11,13 @@
 | original  | new        |
 |-----------|------------|
 | character | squid      |
-| shots     | ink        |
-| checst    | clam       |
+| shots     | bubbles    |
+| chest     | clam       |
 | bombs     | pufferfish |
 | coins     | pearls     |
+| "good"    | turtle     |
+| "evil"    | anglerfish |
+| skull     | fish-bone  |
 
 ## Language/framework
 

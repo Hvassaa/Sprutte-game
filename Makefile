@@ -1,11 +1,12 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wunused-result
+CFLAGS = -Wall -Wextra
+LFLAGS = -lraylib
 
 run: compile
 	./main
 
 compile: main.c
-	$(CC) -o main main.c
+	$(CC) $(CFLAGS) $(LFLAGS) -o main main.c
 
 .PHONY: clean
 clean:
