@@ -48,7 +48,7 @@ int main(void)
       if (IsKeyDown(KEY_S) && playerPos.y + playerRadius <= mapLower) playerPos.y += playerSpeed;
       if (IsKeyDown(KEY_W) && playerPos.y - playerRadius >= mapUpper) playerPos.y -= playerSpeed;
 
-      if (IsKeyDown(KEY_SPACE)) {
+      if (IsKeyDown(KEY_RIGHT)) {
 	Projectile* p = &projectiles[projectileAddIdx];
 	p->position = playerPos;
 	p->speed = (Vector2) { (float)5, (float)0 };
@@ -56,7 +56,31 @@ int main(void)
 	p->lifeTime = 60;	
 	p->enabled = 1;
 	projectileAddIdx = (projectileAddIdx + 1) % maxProjectiles;
-      }
+      } else if (IsKeyDown(KEY_LEFT)) {
+	Projectile* p = &projectiles[projectileAddIdx];
+	p->position = playerPos;
+	p->speed = (Vector2) { (float)-5, (float)0 };
+	p->radius = 5;
+	p->lifeTime = 60;	
+	p->enabled = 1;
+	projectileAddIdx = (projectileAddIdx + 1) % maxProjectiles;
+      } else if (IsKeyDown(KEY_DOWN)) {
+	Projectile* p = &projectiles[projectileAddIdx];
+	p->position = playerPos;
+	p->speed = (Vector2) { (float)0, (float)5 };
+	p->radius = 5;
+	p->lifeTime = 60;	
+	p->enabled = 1;
+	projectileAddIdx = (projectileAddIdx + 1) % maxProjectiles;
+      } else if (IsKeyDown(KEY_UP)) {
+	Projectile* p = &projectiles[projectileAddIdx];
+	p->position = playerPos;
+	p->speed = (Vector2) { (float)0, (float)-5 };
+	p->radius = 5;
+	p->lifeTime = 60;	
+	p->enabled = 1;
+	projectileAddIdx = (projectileAddIdx + 1) % maxProjectiles;
+      }      
 
       for (int i = 0; i < maxProjectiles; i++) {
 	Projectile* p = &projectiles[i];
@@ -78,7 +102,7 @@ int main(void)
 
       for (int i = 0; i < maxProjectiles; i++) {      
 	Projectile p = projectiles[i];
-	DrawCircleV(p.position, p.radius, BLUE);
+	if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
       }
 
       /* DrawCircleV(p.position, p.radius, BLUE); */
