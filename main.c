@@ -9,10 +9,27 @@ typedef struct Projectile {
   bool enabled;
 } Projectile;
 
+void doDraw(int mapUpper,
+	    int mapLeft,
+	    int mapWidth,
+	    int mapHeight,
+	    Vector2 playerPos,
+	    int playerRadius,
+	    Projectile projectiles[],
+	    int maxProjectiles) {
+  BeginDrawing();
+  ClearBackground(RAYWHITE);      
+  DrawRectangle(mapUpper, mapLeft, mapWidth, mapHeight, RED);
+  DrawCircleV(playerPos, playerRadius - 1, GREEN);
+  for (int i = 0; i < maxProjectiles; i++) {      
+    Projectile p = projectiles[i];
+    if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
+  }
+  EndDrawing();  
+}
 
 
-int main(void)
-{
+int main(void) {
   // init vals
   const int screenWidth  = 800;
   const int screenHeight = 450;
@@ -95,18 +112,14 @@ int main(void)
 	}
       }      
 
-      // Draw
-      BeginDrawing();
-      DrawRectangle(mapUpper, mapLeft, mapWidth, mapHeight, RED);
-      DrawCircleV(playerPos, playerRadius - 1, GREEN);
-
-      for (int i = 0; i < maxProjectiles; i++) {      
-	Projectile p = projectiles[i];
-	if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
-      }
-
-      /* DrawCircleV(p.position, p.radius, BLUE); */
-      EndDrawing();
+      doDraw(mapUpper,
+	     mapLeft,
+	     mapWidth,
+	     mapHeight,
+	     playerPos,
+	     playerRadius,
+	     projectiles,
+	     maxProjectiles);
     }
 
   // de-init
