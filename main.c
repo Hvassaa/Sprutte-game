@@ -67,6 +67,25 @@ void shoot(float xSpeed,
   pc->idx = (pc->idx + 1) % maxProjectiles;	
 }
 
+void playerShoot(Player* player, ProjectilesContainer* pc) {
+  if (player->shotCharge >= player->firerate) {
+    float speed = player->shotSpeed;
+    if (IsKeyDown(KEY_RIGHT)) {
+      shoot(speed, 0.0f, player->position, pc);
+      player->shotCharge = 0;
+    } else if (IsKeyDown(KEY_LEFT)) {
+      shoot(-speed, 0.0f, player->position, pc);
+      player->shotCharge = 0;
+    } else if (IsKeyDown(KEY_DOWN)) {
+      shoot(0.0f, speed, player->position, pc);
+      player->shotCharge = 0;
+    } else if (IsKeyDown(KEY_UP)) {
+      shoot(0.0f, -speed, player->position, pc);
+      player->shotCharge = 0;
+    }
+  }  
+}
+
 
 int main(void) {
   // init map values
@@ -85,7 +104,8 @@ int main(void) {
     2.0f,
     20,
     8,
-    8
+    8,
+    5.0f
   };
 
   // init projectile values
@@ -110,22 +130,7 @@ int main(void) {
 
       // Detect shooting, register new projectile
       player.shotCharge++;
-      if (player.shotCharge >= player.firerate) {
-	if (IsKeyDown(KEY_RIGHT)) {
-	  shoot(5.0f, 0.0f, player.position, &pc);
-	  player.shotCharge = 0;
-	} else if (IsKeyDown(KEY_LEFT)) {
-	  shoot(-5.0f, 0.0f, player.position, &pc);
-	  player.shotCharge = 0;
-	} else if (IsKeyDown(KEY_DOWN)) {
-	  shoot(0.0f, 5.0f, player.position, &pc);
-	  player.shotCharge = 0;
-	} else if (IsKeyDown(KEY_UP)) {
-	  shoot(0.0f, -5.0f, player.position, &pc);
-	  player.shotCharge = 0;
-	}
-      }
-      
+      playerShoot(&player, &pc);
 
       // Update each projectile 
       for (int i = 0; i < maxProjectiles; i++) {
