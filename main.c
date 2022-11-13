@@ -86,6 +86,20 @@ void playerShoot(Player* player, ProjectilesContainer* pc) {
   }  
 }
 
+void updateProjectiles(ProjectilesContainer* pc) {
+  for (int i = 0; i < maxProjectiles; i++) {
+    Projectile* p = &(pc->projectiles[i]);
+    if (p->enabled) {
+      if (p->lifeTime == 0) { // disable if lifetime ran out
+	p->enabled = 0;
+	continue;
+      }
+      p->position.x += p->speed.x;
+      p->position.y += p->speed.y;
+      p->lifeTime -= 1;	    
+    }
+  }
+}
 
 int main(void) {
   // init map values
@@ -128,23 +142,12 @@ int main(void) {
       if (IsKeyDown(KEY_S) && player.position.y + player.radius <= mapLower) player.position.y += player.speed;
       if (IsKeyDown(KEY_W) && player.position.y - player.radius >= mapUpper) player.position.y -= player.speed;
 
-      // Detect shooting, register new projectile
       player.shotCharge++;
+      // Detect shooting, register new projectile
       playerShoot(&player, &pc);
 
       // Update each projectile 
-      for (int i = 0; i < maxProjectiles; i++) {
-	Projectile* p = &(pc.projectiles[i]);
-	if (p->enabled) {
-	  if (p->lifeTime == 0) { // disable if lifetime ran out
-	    p->enabled = 0;
-	    continue;
-	  }
-	  p->position.x += p->speed.x;
-	  p->position.y += p->speed.y;
-	  p->lifeTime -= 1;	    
-	}
-      }      
+      updateProjectiles(&pc);
 
       // draw everything
       doDraw(mapUpper,
