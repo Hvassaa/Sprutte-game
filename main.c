@@ -4,10 +4,18 @@
 typedef struct Projectile {
   Vector2 position;
   Vector2 speed;
-  int radius;
-  int lifeTime;
-  bool enabled;
+  int     radius;
+  int     lifeTime;
+  bool    enabled;
 } Projectile;
+
+typedef struct Player {
+  Vector2      position;
+  float        speed;
+  int          radius;
+  unsigned int firerate;
+  unsigned int shotCharge;
+} Player;
 
 void doDraw(int mapUpper,
 	    int mapLeft,
@@ -66,11 +74,13 @@ int main(void) {
   const int mapRight     = mapLeft + mapWidth;
 
   // init player values
-  Vector2 playerPos        = { (float)screenWidth/2, (float)screenHeight/2 };
-  const int playerRadius   = 20;
-  const float playerSpeed  = 2.0f;
-  const int playerFireRate = 8;
-  unsigned int shotTimer   = playerFireRate;
+  Player player = {
+    { (float)screenWidth/2, (float)screenHeight/2 },
+    2.0f,
+    20,
+    8,
+    8
+  };
 
   // init projectile values
   const int maxProjectiles = 50;
@@ -88,26 +98,26 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      if (IsKeyDown(KEY_D) && playerPos.x + playerRadius <= mapRight) playerPos.x += playerSpeed;
-      if (IsKeyDown(KEY_A) && playerPos.x - playerRadius >= mapLeft)  playerPos.x -= playerSpeed;
-      if (IsKeyDown(KEY_S) && playerPos.y + playerRadius <= mapLower) playerPos.y += playerSpeed;
-      if (IsKeyDown(KEY_W) && playerPos.y - playerRadius >= mapUpper) playerPos.y -= playerSpeed;
+      if (IsKeyDown(KEY_D) && player.position.x + player.radius <= mapRight) player.position.x += player.speed;
+      if (IsKeyDown(KEY_A) && player.position.x - player.radius >= mapLeft)  player.position.x -= player.speed;
+      if (IsKeyDown(KEY_S) && player.position.y + player.radius <= mapLower) player.position.y += player.speed;
+      if (IsKeyDown(KEY_W) && player.position.y - player.radius >= mapUpper) player.position.y -= player.speed;
 
       // Detect shooting, register new projectile
-      shotTimer++;
-      if (shotTimer >= playerFireRate) {
+      player.shotCharge++;
+      if (player.shotCharge >= player.firerate) {
 	if (IsKeyDown(KEY_RIGHT)) {
-	  shoot(5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-	  shotTimer = 0;
+	  shoot(5.0f, 0.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  player.shotCharge = 0;
 	} else if (IsKeyDown(KEY_LEFT)) {
-	  shoot(-5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-	  shotTimer = 0;
+	  shoot(-5.0f, 0.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  player.shotCharge = 0;
 	} else if (IsKeyDown(KEY_DOWN)) {
-	  shoot(0.0f, 5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-	  shotTimer = 0;
+	  shoot(0.0f, 5.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  player.shotCharge = 0;
 	} else if (IsKeyDown(KEY_UP)) {
-	  shoot(0.0f, -5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-	  shotTimer = 0;
+	  shoot(0.0f, -5.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  player.shotCharge = 0;
 	}
       }
       
@@ -131,8 +141,8 @@ int main(void) {
 	     mapLeft,
 	     mapWidth,
 	     mapHeight,
-	     playerPos,
-	     playerRadius,
+	     player.position,
+	     player.radius,
 	     projectiles,
 	     maxProjectiles);
     }
