@@ -1,6 +1,8 @@
 #include "raylib.h"
 #include <stdbool.h>
 
+const int maxProjectiles = 50; // TODO make this a defconst
+
 typedef struct Projectile {
   Vector2 position;
   Vector2 speed;
@@ -19,8 +21,7 @@ typedef struct Player {
 } Player;
 
 typedef struct ProjectilesContainer {
-  Projectile projectiles;
-  int maxProjectiles;
+  Projectile* projectiles; // array
   int idx;
 } ProjectilesContainer;
 
@@ -53,19 +54,17 @@ void doDraw(int mapUpper,
 void shoot(float xSpeed,
 	   float ySpeed,
 	   Vector2 origin,
-	   Projectile projectiles[],
-	   int* projectileAddIdx,
-	   int maxProjectiles) {
+	   ProjectilesContainer* pc) {
   /*
     Register a new projectile
    */
-  Projectile* p = &projectiles[*projectileAddIdx];
+  Projectile* p = &(pc->projectiles[pc->idx]);
   p->position = origin;
   p->speed = (Vector2) {xSpeed, ySpeed};
   p->radius = 5;
   p->lifeTime = 60;	
   p->enabled = 1;
-  *projectileAddIdx = (*projectileAddIdx + 1) % maxProjectiles;	
+  pc->idx = (pc->idx + 1) % maxProjectiles;	
 }
 
 
@@ -90,13 +89,12 @@ int main(void) {
   };
 
   // init projectile values
-  const int maxProjectiles = 50;
-  int projectileAddIdx = 0;  
-  Projectile projectiles[maxProjectiles];
+  Projectile ps[50];
   for (int i = 0; i < maxProjectiles; i++) {
-    projectiles[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
+    ps[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
   }
-
+  ProjectilesContainer pc = {ps, 0};
+   
   // set up raylib
   InitWindow(screenWidth, screenHeight, "Sprutte Game");
   SetTargetFPS(60);
@@ -114,16 +112,16 @@ int main(void) {
       player.shotCharge++;
       if (player.shotCharge >= player.firerate) {
 	if (IsKeyDown(KEY_RIGHT)) {
-	  shoot(5.0f, 0.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  shoot(5.0f, 0.0f, player.position, &pc);
 	  player.shotCharge = 0;
 	} else if (IsKeyDown(KEY_LEFT)) {
-	  shoot(-5.0f, 0.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  shoot(-5.0f, 0.0f, player.position, &pc);
 	  player.shotCharge = 0;
 	} else if (IsKeyDown(KEY_DOWN)) {
-	  shoot(0.0f, 5.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  shoot(0.0f, 5.0f, player.position, &pc);
 	  player.shotCharge = 0;
 	} else if (IsKeyDown(KEY_UP)) {
-	  shoot(0.0f, -5.0f, player.position, projectiles, &projectileAddIdx, maxProjectiles);
+	  shoot(0.0f, -5.0f, player.position, &pc);
 	  player.shotCharge = 0;
 	}
       }
@@ -131,7 +129,7 @@ int main(void) {
 
       // Update each projectile 
       for (int i = 0; i < maxProjectiles; i++) {
-	Projectile* p = &projectiles[i];
+	Projectile* p = &(pc.projectiles[i]);
 	if (p->enabled) {
 	  if (p->lifeTime == 0) { // disable if lifetime ran out
 	    p->enabled = 0;
@@ -150,7 +148,7 @@ int main(void) {
 	     mapHeight,
 	     player.position,
 	     player.radius,
-	     projectiles,
+	     pc.projectiles,
 	     maxProjectiles);
     }
 
