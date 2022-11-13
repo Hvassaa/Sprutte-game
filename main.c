@@ -66,9 +66,11 @@ int main(void) {
   const int mapRight     = mapLeft + mapWidth;
 
   // init player values
-  Vector2 playerPos       = { (float)screenWidth/2, (float)screenHeight/2 };
-  const int playerRadius  = 20;
-  const float playerSpeed = 2.0f;
+  Vector2 playerPos        = { (float)screenWidth/2, (float)screenHeight/2 };
+  const int playerRadius   = 20;
+  const float playerSpeed  = 2.0f;
+  const int playerFireRate = 8;
+  unsigned int shotTimer   = playerFireRate;
 
   // init projectile values
   const int maxProjectiles = 50;
@@ -92,15 +94,23 @@ int main(void) {
       if (IsKeyDown(KEY_W) && playerPos.y - playerRadius >= mapUpper) playerPos.y -= playerSpeed;
 
       // Detect shooting, register new projectile
-      if (IsKeyDown(KEY_RIGHT)) {
-	shoot(5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      } else if (IsKeyDown(KEY_LEFT)) {
-	shoot(-5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      } else if (IsKeyDown(KEY_DOWN)) {
-	shoot(0.0f, 5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      } else if (IsKeyDown(KEY_UP)) {
-	shoot(0.0f, -5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      }      
+      shotTimer++;
+      if (shotTimer >= playerFireRate) {
+	if (IsKeyDown(KEY_RIGHT)) {
+	  shoot(5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
+	  shotTimer = 0;
+	} else if (IsKeyDown(KEY_LEFT)) {
+	  shoot(-5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
+	  shotTimer = 0;
+	} else if (IsKeyDown(KEY_DOWN)) {
+	  shoot(0.0f, 5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
+	  shotTimer = 0;
+	} else if (IsKeyDown(KEY_UP)) {
+	  shoot(0.0f, -5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
+	  shotTimer = 0;
+	}
+      }
+      
 
       // Update each projectile 
       for (int i = 0; i < maxProjectiles; i++) {
