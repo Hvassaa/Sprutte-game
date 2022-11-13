@@ -15,7 +15,14 @@ typedef struct Player {
   int          radius;
   unsigned int firerate;
   unsigned int shotCharge;
+  float        shotSpeed;
 } Player;
+
+typedef struct ProjectilesContainer {
+  Projectile projectiles;
+  int maxProjectiles;
+  int idx;
+} ProjectilesContainer;
 
 void doDraw(int mapUpper,
 	    int mapLeft,
