@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 const int maxProjectiles = 50; // TODO make this a defconst
 
@@ -25,6 +26,11 @@ typedef struct ProjectilesContainer {
   int idx;
 } ProjectilesContainer;
 
+typedef struct Block {
+  Vector2 start;
+  Vector2 size;
+} Block;
+
 void doDraw(int mapUpper,
 	    int mapLeft,
 	    int mapWidth,
@@ -48,6 +54,11 @@ void doDraw(int mapUpper,
     Projectile p = projectiles[i];
     if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
   }
+
+
+  DrawRectangle(50, 50, 100, 100, YELLOW);
+
+
   EndDrawing();  
 }
 
@@ -101,6 +112,56 @@ void updateProjectiles(ProjectilesContainer* pc) {
   }
 }
 
+void move(Player* player,
+	  int mapUpper,
+	  int mapLower,
+	  int mapLeft,
+	  int mapRight) {
+  Vector2 newPos = player->position;
+  if (IsKeyDown(KEY_D)) {
+    newPos.x += player->speed;
+  }
+  if (IsKeyDown(KEY_A)) {
+      newPos.x -= player->speed;
+  }
+  if (IsKeyDown(KEY_S)) {
+    newPos.y += player->speed;
+  }
+  if (IsKeyDown(KEY_W)) {
+    newPos.y -= player->speed;
+  }
+
+  Block b = {
+    {50, 50},
+    {100, 100}
+  };
+  bool insideX = 0;
+  bool insideY = 0;
+  Block blocks[1] = {b};
+  for (int i = 0; i < 1; i++) {
+    Block b = blocks[i];
+    insideX = (newPos.x + player->radius - 2 >= b.start.x &
+		     newPos.x - player->radius + 2 <= b.start.x + b.size.x);
+    insideY = (newPos.y + player->radius - 2>= b.start.y &&
+		     newPos.y - player->radius + 2<= b.start.y + b.size.y);
+
+    if(newPos.x != player->position.x && newPos.y != player->position.y) {
+      printf("old: x: %f, y: %f\n", player->position.x, player->position.y);
+      printf("new: x: %f, y: %f\n", newPos.x, newPos.y);
+    }
+    if (insideX && insideY) {
+      return;
+    }
+    player->position = newPos;
+    /* if (!insideX) { */
+    /*   player->position.y = newPos.y; */
+    /* } */
+    /* if (!insideY) { */
+    /*   player->position.x = newPos.x; */
+    /* }     */
+  }  
+}
+
 int main(void) {
   // init map values
   const int screenWidth  = 800;
@@ -137,10 +198,11 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      if (IsKeyDown(KEY_D) && player.position.x + player.radius <= mapRight) player.position.x += player.speed;
-      if (IsKeyDown(KEY_A) && player.position.x - player.radius >= mapLeft)  player.position.x -= player.speed;
-      if (IsKeyDown(KEY_S) && player.position.y + player.radius <= mapLower) player.position.y += player.speed;
-      if (IsKeyDown(KEY_W) && player.position.y - player.radius >= mapUpper) player.position.y -= player.speed;
+      /* if (IsKeyDown(KEY_D) && player.position.x + player.radius <= mapRight) player.position.x += player.speed; */
+      /* if (IsKeyDown(KEY_A) && player.position.x - player.radius >= mapLeft)  player.position.x -= player.speed; */
+      /* if (IsKeyDown(KEY_S) && player.position.y + player.radius <= mapLower) player.position.y += player.speed; */
+      /* if (IsKeyDown(KEY_W) && player.position.y - player.radius >= mapUpper) player.position.y -= player.speed; */
+      move(&player, mapUpper, mapLower, mapLeft, mapRight);
 
       player.shotCharge++;
       // Detect shooting, register new projectile
