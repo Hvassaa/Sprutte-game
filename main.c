@@ -1,13 +1,35 @@
 #include "raylib.h"
 #include <stdbool.h>
+#include <stdio.h>
+
+const int maxProjectiles = 50; // TODO make this a defconst
 
 typedef struct Projectile {
   Vector2 position;
   Vector2 speed;
-  int radius;
-  int lifeTime;
-  bool enabled;
+  int     radius;
+  int     lifeTime;
+  bool    enabled;
 } Projectile;
+
+typedef struct Player {
+  Vector2      position;
+  float        speed;
+  int          radius;
+  unsigned int firerate;
+  unsigned int shotCharge;
+  float        shotSpeed;
+} Player;
+
+typedef struct ProjectilesContainer {
+  Projectile* projectiles; // array
+  int idx;
+} ProjectilesContainer;
+
+typedef struct Block {
+  Vector2 start;
+  Vector2 size;
+} Block;
 
 void doDraw(int mapUpper,
 	    int mapLeft,
@@ -32,27 +54,113 @@ void doDraw(int mapUpper,
     Projectile p = projectiles[i];
     if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
   }
+
+
+  DrawRectangle(50, 50, 100, 100, YELLOW);
+
+
   EndDrawing();  
 }
 
 void shoot(float xSpeed,
 	   float ySpeed,
 	   Vector2 origin,
-	   Projectile projectiles[],
-	   int* projectileAddIdx,
-	   int maxProjectiles) {
+	   ProjectilesContainer* pc) {
   /*
     Register a new projectile
    */
-  Projectile* p = &projectiles[*projectileAddIdx];
+  Projectile* p = &(pc->projectiles[pc->idx]);
   p->position = origin;
   p->speed = (Vector2) {xSpeed, ySpeed};
   p->radius = 5;
   p->lifeTime = 60;	
   p->enabled = 1;
-  *projectileAddIdx = (*projectileAddIdx + 1) % maxProjectiles;	
+  pc->idx = (pc->idx + 1) % maxProjectiles;	
 }
 
+void playerShoot(Player* player, ProjectilesContainer* pc) {
+  if (player->shotCharge >= player->firerate) {
+    float speed = player->shotSpeed;
+    if (IsKeyDown(KEY_RIGHT)) {
+      shoot(speed, 0.0f, player->position, pc);
+      player->shotCharge = 0;
+    } else if (IsKeyDown(KEY_LEFT)) {
+      shoot(-speed, 0.0f, player->position, pc);
+      player->shotCharge = 0;
+    } else if (IsKeyDown(KEY_DOWN)) {
+      shoot(0.0f, speed, player->position, pc);
+      player->shotCharge = 0;
+    } else if (IsKeyDown(KEY_UP)) {
+      shoot(0.0f, -speed, player->position, pc);
+      player->shotCharge = 0;
+    }
+  }  
+}
+
+void updateProjectiles(ProjectilesContainer* pc) {
+  for (int i = 0; i < maxProjectiles; i++) {
+    Projectile* p = &(pc->projectiles[i]);
+    if (p->enabled) {
+      if (p->lifeTime == 0) { // disable if lifetime ran out
+	p->enabled = 0;
+	continue;
+      }
+      p->position.x += p->speed.x;
+      p->position.y += p->speed.y;
+      p->lifeTime -= 1;	    
+    }
+  }
+}
+
+void move(Player* player,
+	  int mapUpper,
+	  int mapLower,
+	  int mapLeft,
+	  int mapRight) {
+  Vector2 newPos = player->position;
+  if (IsKeyDown(KEY_D)) {
+    newPos.x += player->speed;
+  }
+  if (IsKeyDown(KEY_A)) {
+      newPos.x -= player->speed;
+  }
+  if (IsKeyDown(KEY_S)) {
+    newPos.y += player->speed;
+  }
+  if (IsKeyDown(KEY_W)) {
+    newPos.y -= player->speed;
+  }
+
+  Block b = {
+    {50, 50},
+    {100, 100}
+  };
+  bool insideX = 0;
+  bool insideY = 0;
+  Block blocks[1] = {b};
+  for (int i = 0; i < 1; i++) {
+    Block b = blocks[i];
+    insideX = (newPos.x + player->radius - 2 >= b.start.x &
+		     newPos.x - player->radius + 2 <= b.start.x + b.size.x);
+    insideY = (newPos.y + player->radius - 2>= b.start.y &&
+		     newPos.y - player->radius + 2<= b.start.y + b.size.y);
+
+    if(newPos.x != player->position.x && newPos.y != player->position.y) {
+      printf("old: x: %f, y: %f\n", player->position.x, player->position.y);
+      printf("new: x: %f, y: %f\n", newPos.x, newPos.y);
+    }
+    if (insideX && insideY) {
+      return;
+    }
+    player->position = newPos;
+    /* if (!insideX) { */
+    /*   player->position.y = newPos.y; */
+    /* } */
+    /* if (!insideY) { */
+    /*   player->position.x = newPos.x; */
+    /* }     */
+  }  
+}
 
 int main(void) {
   // init map values
@@ -66,18 +174,22 @@ int main(void) {
   const int mapRight     = mapLeft + mapWidth;
 
   // init player values
-  Vector2 playerPos       = { (float)screenWidth/2, (float)screenHeight/2 };
-  const int playerRadius  = 20;
-  const float playerSpeed = 2.0f;
+  Player player = {
+    { (float)screenWidth/2, (float)screenHeight/2 },
+    2.0f,
+    20,
+    8,
+    8,
+    5.0f
+  };
 
   // init projectile values
-  const int maxProjectiles = 50;
-  int projectileAddIdx = 0;  
-  Projectile projectiles[maxProjectiles];
+  Projectile ps[50];
   for (int i = 0; i < maxProjectiles; i++) {
-    projectiles[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
+    ps[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
   }
-
+  ProjectilesContainer pc = {ps, 0};
+   
   // set up raylib
   InitWindow(screenWidth, screenHeight, "Sprutte Game");
   SetTargetFPS(60);
@@ -86,44 +198,27 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      if (IsKeyDown(KEY_D) && playerPos.x + playerRadius <= mapRight) playerPos.x += playerSpeed;
-      if (IsKeyDown(KEY_A) && playerPos.x - playerRadius >= mapLeft)  playerPos.x -= playerSpeed;
-      if (IsKeyDown(KEY_S) && playerPos.y + playerRadius <= mapLower) playerPos.y += playerSpeed;
-      if (IsKeyDown(KEY_W) && playerPos.y - playerRadius >= mapUpper) playerPos.y -= playerSpeed;
+      /* if (IsKeyDown(KEY_D) && player.position.x + player.radius <= mapRight) player.position.x += player.speed; */
+      /* if (IsKeyDown(KEY_A) && player.position.x - player.radius >= mapLeft)  player.position.x -= player.speed; */
+      /* if (IsKeyDown(KEY_S) && player.position.y + player.radius <= mapLower) player.position.y += player.speed; */
+      /* if (IsKeyDown(KEY_W) && player.position.y - player.radius >= mapUpper) player.position.y -= player.speed; */
+      move(&player, mapUpper, mapLower, mapLeft, mapRight);
 
+      player.shotCharge++;
       // Detect shooting, register new projectile
-      if (IsKeyDown(KEY_RIGHT)) {
-	shoot(5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      } else if (IsKeyDown(KEY_LEFT)) {
-	shoot(-5.0f, 0.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      } else if (IsKeyDown(KEY_DOWN)) {
-	shoot(0.0f, 5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      } else if (IsKeyDown(KEY_UP)) {
-	shoot(0.0f, -5.0f, playerPos, projectiles, &projectileAddIdx, maxProjectiles);
-      }      
+      playerShoot(&player, &pc);
 
       // Update each projectile 
-      for (int i = 0; i < maxProjectiles; i++) {
-	Projectile* p = &projectiles[i];
-	if (p->enabled) {
-	  if (p->lifeTime == 0) { // disable if lifetime ran out
-	    p->enabled = 0;
-	    continue;
-	  }
-	  p->position.x += p->speed.x;
-	  p->position.y += p->speed.y;
-	  p->lifeTime -= 1;	    
-	}
-      }      
+      updateProjectiles(&pc);
 
       // draw everything
       doDraw(mapUpper,
 	     mapLeft,
 	     mapWidth,
 	     mapHeight,
-	     playerPos,
-	     playerRadius,
-	     projectiles,
+	     player.position,
+	     player.radius,
+	     pc.projectiles,
 	     maxProjectiles);
     }
 
