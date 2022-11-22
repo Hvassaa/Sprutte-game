@@ -102,8 +102,8 @@ void updateProjectiles(ProjectilesContainer* pc) {
     Projectile* p = &(pc->projectiles[i]);
     if (p->enabled) {
       if (p->lifeTime == 0) { // disable if lifetime ran out
-	p->enabled = 0;
-	continue;
+	      p->enabled = 0;
+	      continue;
       }
       p->position.x += p->speed.x;
       p->position.y += p->speed.y;
@@ -164,10 +164,11 @@ void move(Player* player,
 
 int main(void) {
   // init map values
+  int playerRadius       = 20;
   const int screenWidth  = 800;
   const int screenHeight = 450;
-  const int mapWidth     = screenWidth -  20;
-  const int mapHeight    = screenHeight - 20;
+  const int mapWidth     = screenWidth -  playerRadius;
+  const int mapHeight    = screenHeight - playerRadius;
   const int mapUpper     = 10;
   const int mapLower     = mapUpper + mapHeight;
   const int mapLeft      = 10;
@@ -177,7 +178,7 @@ int main(void) {
   Player player = {
     { (float)screenWidth/2, (float)screenHeight/2 },
     2.0f,
-    20,
+    playerRadius,
     8,
     8,
     5.0f
@@ -189,7 +190,7 @@ int main(void) {
     ps[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
   }
   ProjectilesContainer pc = {ps, 0};
-   
+  
   // set up raylib
   InitWindow(screenWidth, screenHeight, "Sprutte Game");
   SetTargetFPS(60);
@@ -198,10 +199,6 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      /* if (IsKeyDown(KEY_D) && player.position.x + player.radius <= mapRight) player.position.x += player.speed; */
-      /* if (IsKeyDown(KEY_A) && player.position.x - player.radius >= mapLeft)  player.position.x -= player.speed; */
-      /* if (IsKeyDown(KEY_S) && player.position.y + player.radius <= mapLower) player.position.y += player.speed; */
-      /* if (IsKeyDown(KEY_W) && player.position.y - player.radius >= mapUpper) player.position.y -= player.speed; */
       move(&player, mapUpper, mapLower, mapLeft, mapRight);
 
       player.shotCharge++;
