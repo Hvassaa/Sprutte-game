@@ -57,6 +57,7 @@ void doDraw(int mapUpper,
 
 
   DrawRectangle(50, 50, 100, 100, YELLOW);
+  DrawRectangle(50, 40, 50, 50, WHITE);
 
 
   EndDrawing();
@@ -131,45 +132,43 @@ void move(Player* player,
     newPos.y -= player->speed;
   }
 
-  Block b = {
+  Block b1 = {
     {50, 50},
     {100, 100}
   };
-  Block blocks[1] = {b};
+  Block b2 = {
+    {50, 40},
+    {50, 50}
+  };
+  Block blocks[2] = {b1, b2};
   bool xAllowed = 1;
   bool yAllowed = 1;
-  for (int i = 0; i < 1; i++) {
+
+  if (newPos.x <= mapLeft + player->radius || newPos.x >= mapRight - player->radius) {
+    xAllowed = 0;
+  }
+  if (newPos.y <= mapUpper + player->radius || newPos.y >= mapLower - player->radius) {
+    yAllowed = 0;
+  }
+
+  for (int i = 0; i < 2; i++) {
     Block b = blocks[i];
     int bStartX = b.start.x - player->radius;
     int bStartY = b.start.y - player->radius;
     int bEndX = b.start.x + b.size.x + player->radius;
     int bEndY = b.start.y + b.size.y + player->radius;
-    // check if we can move y, but not x
-    if (!(newPos.x <= bEndX &&
-	player->position.y <= bEndY &&
-	newPos.x >= bStartX &&
-	  player->position.y >= bStartY)) {
-      yAllowed = 0;
-      /* player->position.y = newPos.y; */
-      // check if we can move x, but not y
-    }
-    if (!(player->position.x <= bEndX &&
-	       newPos.y <= bEndY &&
-	       player->position.x >= bStartX &&
-		 newPos.y >= bStartY)) {
+    if(player->position.y <= bEndY &&
+       player->position.y >= bStartY &&
+       (newPos.x <= bEndX &&
+	newPos.x >= bStartX)) {
       xAllowed = 0;
-      /* player->position.x = newPos.x; */
     }
-      // none is allowed
-    /* else if (newPos.x <= bEndX && */
-    /* 	newPos.y <= bEndY && */
-    /* 	newPos.x >= bStartX && */
-    /* 	newPos.y >= bStartY) { */
-    /*   return; */
-    /* } */
-    /* else { */
-    /*   player->position = newPos; */
-    /* } */
+    if(player->position.x <= bEndX &&
+       player->position.x >= bStartX &&
+       (newPos.y <= bEndY &&
+	newPos.y >= bStartY)) {
+      yAllowed = 0;
+    }
   }
   if(xAllowed) {
     player->position.x = newPos.x;
