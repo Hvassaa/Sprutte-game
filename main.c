@@ -47,10 +47,10 @@ void doDraw(int mapUpper,
     - projectiles
    */
   BeginDrawing();
-  ClearBackground(RAYWHITE);      
+  ClearBackground(RAYWHITE);
   DrawRectangle(mapUpper, mapLeft, mapWidth, mapHeight, RED);
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
-  for (int i = 0; i < maxProjectiles; i++) {      
+  for (int i = 0; i < maxProjectiles; i++) {
     Projectile p = projectiles[i];
     if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
   }
@@ -59,7 +59,7 @@ void doDraw(int mapUpper,
   DrawRectangle(50, 50, 100, 100, YELLOW);
 
 
-  EndDrawing();  
+  EndDrawing();
 }
 
 void shoot(float xSpeed,
@@ -73,9 +73,9 @@ void shoot(float xSpeed,
   p->position = origin;
   p->speed = (Vector2) {xSpeed, ySpeed};
   p->radius = 5;
-  p->lifeTime = 60;	
+  p->lifeTime = 60;
   p->enabled = 1;
-  pc->idx = (pc->idx + 1) % maxProjectiles;	
+  pc->idx = (pc->idx + 1) % maxProjectiles;
 }
 
 void playerShoot(Player* player, ProjectilesContainer* pc) {
@@ -94,7 +94,7 @@ void playerShoot(Player* player, ProjectilesContainer* pc) {
       shoot(0.0f, -speed, player->position, pc);
       player->shotCharge = 0;
     }
-  }  
+  }
 }
 
 void updateProjectiles(ProjectilesContainer* pc) {
@@ -107,7 +107,7 @@ void updateProjectiles(ProjectilesContainer* pc) {
       }
       p->position.x += p->speed.x;
       p->position.y += p->speed.y;
-      p->lifeTime -= 1;	    
+      p->lifeTime -= 1;
     }
   }
 }
@@ -135,31 +135,48 @@ void move(Player* player,
     {50, 50},
     {100, 100}
   };
-  bool insideX = 0;
-  bool insideY = 0;
   Block blocks[1] = {b};
+  bool xAllowed = 1;
+  bool yAllowed = 1;
   for (int i = 0; i < 1; i++) {
     Block b = blocks[i];
-    insideX = (newPos.x + player->radius - 2 >= b.start.x &
-		     newPos.x - player->radius + 2 <= b.start.x + b.size.x);
-    insideY = (newPos.y + player->radius - 2>= b.start.y &&
-		     newPos.y - player->radius + 2<= b.start.y + b.size.y);
-
-    if(newPos.x != player->position.x && newPos.y != player->position.y) {
-      printf("old: x: %f, y: %f\n", player->position.x, player->position.y);
-      printf("new: x: %f, y: %f\n", newPos.x, newPos.y);
+    int bStartX = b.start.x - player->radius;
+    int bStartY = b.start.y - player->radius;
+    int bEndX = b.start.x + b.size.x + player->radius;
+    int bEndY = b.start.y + b.size.y + player->radius;
+    // check if we can move y, but not x
+    if (!(newPos.x <= bEndX &&
+	player->position.y <= bEndY &&
+	newPos.x >= bStartX &&
+	  player->position.y >= bStartY)) {
+      yAllowed = 0;
+      /* player->position.y = newPos.y; */
+      // check if we can move x, but not y
     }
-    if (insideX && insideY) {
-      return;
+    if (!(player->position.x <= bEndX &&
+	       newPos.y <= bEndY &&
+	       player->position.x >= bStartX &&
+		 newPos.y >= bStartY)) {
+      xAllowed = 0;
+      /* player->position.x = newPos.x; */
     }
-    player->position = newPos;
-    /* if (!insideX) { */
-    /*   player->position.y = newPos.y; */
+      // none is allowed
+    /* else if (newPos.x <= bEndX && */
+    /* 	newPos.y <= bEndY && */
+    /* 	newPos.x >= bStartX && */
+    /* 	newPos.y >= bStartY) { */
+    /*   return; */
     /* } */
-    /* if (!insideY) { */
-    /*   player->position.x = newPos.x; */
-    /* }     */
-  }  
+    /* else { */
+    /*   player->position = newPos; */
+    /* } */
+  }
+  if(xAllowed) {
+    player->position.x = newPos.x;
+  }
+  if(yAllowed) {
+    player->position.y = newPos.y;
+  }
 }
 
 int main(void) {
@@ -190,11 +207,11 @@ int main(void) {
     ps[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
   }
   ProjectilesContainer pc = {ps, 0};
-  
+
   // set up raylib
   InitWindow(screenWidth, screenHeight, "Sprutte Game");
   SetTargetFPS(60);
-  
+
   // Main game loop
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
@@ -205,7 +222,7 @@ int main(void) {
       // Detect shooting, register new projectile
       playerShoot(&player, &pc);
 
-      // Update each projectile 
+      // Update each projectile
       updateProjectiles(&pc);
 
       // draw everything
