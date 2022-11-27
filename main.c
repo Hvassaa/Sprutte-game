@@ -127,7 +127,7 @@ void updateProjectiles(ProjectilesContainer* pc) {
   }
 }
 
-void move(Player* player, Block blocks[]) {
+int move(Player* player, Block blocks[], int roomIdx) {
   Vector2 newPos = player->position;
   if (IsKeyDown(KEY_D)) {
     newPos.x += player->speed;
@@ -169,6 +169,18 @@ void move(Player* player, Block blocks[]) {
   }
   if(yAllowed) {
     player->position.y = newPos.y;
+  }
+
+  if (player->position.x < 0) {
+    return roomIdx - 1;
+  } else if (player->position.x > SCREEN_WIDTH) {
+    return roomIdx + 1;
+  } else if (player->position.y < 0) {
+    return roomIdx - R;
+  } else if (player->position.y > SCREEN_HEIGHT) {
+    return roomIdx + R;
+  } else {
+    return roomIdx;
   }
 }
 
@@ -264,7 +276,6 @@ int main(void) {
 	bool adjacentDoors[4] = {up, left, down, right};
       
 	Block* blocks = malloc(MAX_BLOCKS * sizeof *blocks);
-	/* BlocksContainer bc = {blocks, 0}; */
 	// Top border
 	blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*adjacentDoors[0]), 10}};
 	blocks[1] = (Block){(Vector2){(SCREEN_WIDTH/2)+((doorSize/2)*adjacentDoors[0]), 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*adjacentDoors[0]), 10}};
@@ -288,7 +299,8 @@ int main(void) {
     }
   }
 
-  Room room = map[4];
+  int curRoom = R * R / 2;
+  Room room = map[curRoom];
 
   // set up raylib
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sprutte Game");
@@ -298,7 +310,20 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      move(&player, room.blocks);
+      int a = move(&player, room.blocks, curRoom);
+      if (a != curRoom) {
+	if (a == curRoom + 1) {
+	  player.position.x = 1;
+	} else if (a == curRoom - 1) {
+	  player.position.x = SCREEN_WIDTH - 1;
+	} else if (a == curRoom + R) {
+	  player.position.y = 1;
+	} else if (a == curRoom - R) {
+	  player.position.y = SCREEN_HEIGHT - 1;
+	}
+	curRoom = a;
+	room = map[curRoom];
+      }
 
       player.shotCharge++;
       // Detect shooting, register new projectile
