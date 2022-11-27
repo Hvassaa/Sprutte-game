@@ -62,22 +62,6 @@ void doDraw(int mapUpper,
     if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
   }
 
-
-  DrawRectangle(50, 50, 100, 100, YELLOW);
-  DrawRectangle(50, 40, 50, 50, WHITE);
-  int doorSize = 70;
-  DrawRectangle(mapLeft, mapUpper, (mapWidth/2)-(doorSize/2)+5, 10, BLACK);
-  DrawRectangle((mapWidth/2)+(doorSize/2), mapUpper, (mapWidth/2)-(doorSize/2)+5, 10, BLACK);
-  // //draw upper border
-  // DrawRectangle(mapLeft, mapUpper, (mapWidth/2)-(doorSize/2), 10, BLACK);
-  // DrawRectangle((mapWidth/2)+(doorSize/2), mapUpper, (mapWidth/2)-(doorSize/3), 10, BLACK);
-  // //draw lower border
-  // DrawRectangle(mapLeft, mapHeight, (mapWidth/2)-(doorSize/2), 10, BLACK);
-  // DrawRectangle((mapWidth/2)+(doorSize/2), mapHeight, (mapWidth/2)-(doorSize/3), 10, BLACK);
-  // //draw left border
-  // DrawRectangle(mapLeft, mapUpper, 10, (mapHeight/2)-(doorSize/2), BLACK);
-  // DrawRectangle(mapLeft, (mapHeight/2)+(doorSize/2), 10 , (mapHeight/2)-(doorSize/3), BLACK);
-
   for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = blocks[i];
     DrawRectangle(b.start.x, b.start.y, b.size.x, b.size.y, YELLOW);
@@ -157,25 +141,9 @@ void move(Player* player,
   }
 
 
-
-  Block b1 = {
-    {50, 50},
-    {100, 100}
-  };
-  Block b2 = {
-    {50, 40},
-    {50, 50}
-  };
-  Block blocks[2] = {b1, b2};
   bool xAllowed = 1;
   bool yAllowed = 1;
 
-  if (newPos.x <= mapLeft + player->radius || newPos.x >= mapRight - player->radius) {
-    xAllowed = 0;
-  }
-  if (newPos.y <= mapUpper + player->radius || newPos.y >= mapLower - player->radius) {
-    yAllowed = 0;
-  }
 
   for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = blocks[i];
@@ -209,7 +177,7 @@ int main(void) {
   int playerRadius       = 20;
   const int screenWidth  = 800;
   const int screenHeight = 450;
-  const int mapWidth     = screenWidth -  playerRadius;
+  const int mapWidth     = screenWidth - playerRadius;
   const int mapHeight    = screenHeight - playerRadius;
   const int mapUpper     = 10;
   const int mapLower     = mapUpper + mapHeight;
@@ -239,16 +207,22 @@ int main(void) {
     bs[i] = (Block){(Vector2){0,0}, (Vector2){0,0}};
   }
   BlocksContainer bc = {bs, 0};
-    Block b1 = {
-    {50, 50},
-    {100, 100}
-  };
-  Block b2 = {
-    {50, 40},
-    {50, 50}
-  };
-  bc.blocks[0] = b1;
-  bc.blocks[1] = b2;
+
+  int doorSize = 70;
+  bool adjacentDoors[4] = {0, 1, 1, 1};
+
+  // Upper border
+  bc.blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
+  bc.blocks[1] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[0]), 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
+  // Left border
+  bc.blocks[2] = (Block){(Vector2){0, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
+  bc.blocks[3] = (Block){(Vector2){0, (screenHeight/2)+((doorSize/2)*adjacentDoors[1])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
+  // Bottom border
+  bc.blocks[4] = (Block){(Vector2){0, screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
+  bc.blocks[5] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[2]), screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
+  // Right border
+  bc.blocks[6] = (Block){(Vector2){screenWidth - 10, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
+  bc.blocks[7] = (Block){(Vector2){screenWidth - 10, (screenHeight/2)+((doorSize/2)*adjacentDoors[3])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
 
   // set up raylib
   InitWindow(screenWidth, screenHeight, "Sprutte Game");
