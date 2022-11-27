@@ -1,10 +1,13 @@
 #include "raylib.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAX_PROJECTILES 50
 #define MAX_BLOCKS      50
 #define R               3
+#define SCREEN_WIDTH    800
+#define SCREEN_HEIGHT   450
 
 typedef struct Projectile {
   Vector2 position;
@@ -169,15 +172,39 @@ void move(Player* player, Block blocks[]) {
   }
 }
 
+Room initializeRoom(int i, int j, bool doors[], int doorSize) {
+  Block blocks[MAX_BLOCKS];
+  // Top border
+  blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[0]), 10}};
+  blocks[1] = (Block){(Vector2){(SCREEN_WIDTH/2)+((doorSize/2)*doors[0]), 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[0]), 10}};
+  // Left border
+  blocks[2] = (Block){(Vector2){0, 0}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[1])}};
+  blocks[3] = (Block){(Vector2){0, (SCREEN_HEIGHT/2)+((doorSize/2)*doors[1])}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[1])}};
+  // Bottom border
+  blocks[4] = (Block){(Vector2){0, SCREEN_HEIGHT - 10}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[2]), 10}};
+  blocks[5] = (Block){(Vector2){(SCREEN_WIDTH/2)+((doorSize/2)*doors[2]), SCREEN_HEIGHT - 10}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[2]), 10}};
+  // Right border
+  blocks[6] = (Block){(Vector2){SCREEN_WIDTH - 10, 0}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[3])}};
+  blocks[7] = (Block){(Vector2){SCREEN_WIDTH - 10, (SCREEN_HEIGHT/2)+((doorSize/2)*doors[3])}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[3])}};
+  Room room = {
+    blocks,
+    i,
+    j,
+    1
+  };
+  
+  return room;
+}
+
 int main(void) {
   // init map values
   int playerRadius       = 20;
-  const int screenWidth  = 800;
-  const int screenHeight = 450;
+  /* const int SCREEN_WIDTH  = 800; */
+  /* const int SCREEN_HEIGHT = 450; */
   
   // init player values
   Player player = {
-    { (float)screenWidth/2, (float)screenHeight/2 },
+    { (float)SCREEN_WIDTH/2, (float)SCREEN_HEIGHT/2 },
     2.0f,
     playerRadius,
     8,
@@ -195,23 +222,22 @@ int main(void) {
   int doorSize = 70;
   // generate map
 
-
-
   // 
-  bool rooms[R][R] = {
-    {0, 0, 1},
-    {1, 1, 1},
-    {0, 1, 1}
+  bool rooms[R * R] = {
+    0, 0, 1,
+    1, 1, 1,
+    0, 1, 1
   };
-  Room map[R][R];
+  Room* map = malloc((R * R) * sizeof *map);
+  
   for (size_t i = 0; i < R; i++)
   {
     for (size_t j = 0; j < R; j++)
     {
-      bool enabled = rooms[i][j];
+      int realIdx = R * i + j;
+      bool enabled = rooms[realIdx];
       if (!enabled) {
-	/* Block blocks[MAX_BLOCKS]; */
-	map[i][j] = (Room){
+	map[realIdx] = (Room){
 	  NULL,
 	  i,
 	  j,
@@ -222,50 +248,50 @@ int main(void) {
 	bool down  = 0;
 	bool left  = 0;
 	bool right = 0;
-	if(j > 0) {
-	  left = rooms[i][j - 1];
+	if(realIdx % R != 0) {
+	  left = rooms[realIdx - 1];
 	}
-	if(j < R - 1) {
-	  right = rooms[i][j + 1];
+	if((realIdx + 1) % R != 0) {
+	  right = rooms[realIdx + 1];
 	}
-	if(i > 0) {
-	  up = rooms[i - 1][j];
+	if(realIdx >= R) {
+	  up = rooms[realIdx - R];
 	}
-	if(i < R - 1) {
-	  down = rooms[i + 1][j];
+	if(realIdx < R * (R - 1)) {
+	  down = rooms[realIdx + R];
 	}
 
 	bool adjacentDoors[4] = {up, left, down, right};
       
-	Block blocks[MAX_BLOCKS];
+	Block* blocks = malloc(MAX_BLOCKS * sizeof *blocks);
 	/* BlocksContainer bc = {blocks, 0}; */
 	// Top border
-	blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
-	blocks[1] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[0]), 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
+	blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*adjacentDoors[0]), 10}};
+	blocks[1] = (Block){(Vector2){(SCREEN_WIDTH/2)+((doorSize/2)*adjacentDoors[0]), 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*adjacentDoors[0]), 10}};
 	// Left border
-	blocks[2] = (Block){(Vector2){0, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
-	blocks[3] = (Block){(Vector2){0, (screenHeight/2)+((doorSize/2)*adjacentDoors[1])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
+	blocks[2] = (Block){(Vector2){0, 0}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*adjacentDoors[1])}};
+	blocks[3] = (Block){(Vector2){0, (SCREEN_HEIGHT/2)+((doorSize/2)*adjacentDoors[1])}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*adjacentDoors[1])}};
 	// Bottom border
-	blocks[4] = (Block){(Vector2){0, screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
-	blocks[5] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[2]), screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
+	blocks[4] = (Block){(Vector2){0, SCREEN_HEIGHT - 10}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*adjacentDoors[2]), 10}};
+	blocks[5] = (Block){(Vector2){(SCREEN_WIDTH/2)+((doorSize/2)*adjacentDoors[2]), SCREEN_HEIGHT - 10}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*adjacentDoors[2]), 10}};
 	// Right border
-	blocks[6] = (Block){(Vector2){screenWidth - 10, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
-	blocks[7] = (Block){(Vector2){screenWidth - 10, (screenHeight/2)+((doorSize/2)*adjacentDoors[3])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
+	blocks[6] = (Block){(Vector2){SCREEN_WIDTH - 10, 0}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*adjacentDoors[3])}};
+	blocks[7] = (Block){(Vector2){SCREEN_WIDTH - 10, (SCREEN_HEIGHT/2)+((doorSize/2)*adjacentDoors[3])}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*adjacentDoors[3])}};
 	Room room = {
 	  blocks,
 	  i,
 	  j,
 	  1
 	};
-	map[i][j] = room;
+	map[realIdx] = room;
       }
     }
   }
 
-  Room room = map[1][1];
+  Room room = map[4];
 
   // set up raylib
-  InitWindow(screenWidth, screenHeight, "Sprutte Game");
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sprutte Game");
   SetTargetFPS(60);
 
   // Main game loop
@@ -290,6 +316,7 @@ int main(void) {
     }
 
   // de-init
+  free(map);
   CloseWindow();
   return 0;
 }
