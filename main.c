@@ -4,6 +4,7 @@
 
 #define MAX_PROJECTILES 50
 #define MAX_BLOCKS      50
+#define R               3
 
 typedef struct Projectile {
   Vector2 position;
@@ -36,6 +37,13 @@ typedef struct BlocksContainer {
   Block* blocks; // array
   int idx;
 } BlocksContainer;
+
+typedef struct Room {
+  Block* blocks;
+  int x;
+  int y;
+  bool enabled;
+} Room;
 
 void doDraw(
 	    Vector2 playerPos,
@@ -184,40 +192,77 @@ int main(void) {
   }
   ProjectilesContainer pc = {ps, 0};
 
+  int doorSize = 70;
   // generate map
-  Block map[11][11];
-  for (size_t i = 0; i < 11; i++)
+
+
+
+  // 
+  bool rooms[R][R] = {
+    {0, 0, 1},
+    {1, 1, 1},
+    {0, 1, 1}
+  };
+  Room map[R][R];
+  for (size_t i = 0; i < R; i++)
   {
-    for (size_t j = 0; j < 11; j++)
+    for (size_t j = 0; j < R; j++)
     {
-      map[i][j] = NULL;
+      bool enabled = rooms[i][j];
+      if (!enabled) {
+	/* Block blocks[MAX_BLOCKS]; */
+	map[i][j] = (Room){
+	  NULL,
+	  i,
+	  j,
+	  0
+	};
+      } else {
+	bool up    = 0;
+	bool down  = 0;
+	bool left  = 0;
+	bool right = 0;
+	if(j > 0) {
+	  left = rooms[i][j - 1];
+	}
+	if(j < R - 1) {
+	  right = rooms[i][j + 1];
+	}
+	if(i > 0) {
+	  up = rooms[i - 1][j];
+	}
+	if(i < R - 1) {
+	  down = rooms[i + 1][j];
+	}
+
+	bool adjacentDoors[4] = {up, left, down, right};
+      
+	Block blocks[MAX_BLOCKS];
+	/* BlocksContainer bc = {blocks, 0}; */
+	// Top border
+	blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
+	blocks[1] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[0]), 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
+	// Left border
+	blocks[2] = (Block){(Vector2){0, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
+	blocks[3] = (Block){(Vector2){0, (screenHeight/2)+((doorSize/2)*adjacentDoors[1])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
+	// Bottom border
+	blocks[4] = (Block){(Vector2){0, screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
+	blocks[5] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[2]), screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
+	// Right border
+	blocks[6] = (Block){(Vector2){screenWidth - 10, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
+	blocks[7] = (Block){(Vector2){screenWidth - 10, (screenHeight/2)+((doorSize/2)*adjacentDoors[3])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
+	Room room = {
+	  blocks,
+	  i,
+	  j,
+	  1
+	};
+	map[i][j] = room;
+      }
     }
   }
-  
-  Block bs = map[5][5]
 
-  // init block values
-  Block bs[50];
-  for (int i = 0; i < MAX_BLOCKS; i++) {
-    bs[i] = (Block){(Vector2){0,0}, (Vector2){0,0}};
-  }
-  BlocksContainer bc = {bs, 0};
-
-  int doorSize = 70;
-  bool adjacentDoors[4] = {0, 1, 1, 1};
-
-  // Upper border
-  bc.blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
-  bc.blocks[1] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[0]), 0}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[0]), 10}};
-  // Left border
-  bc.blocks[2] = (Block){(Vector2){0, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
-  bc.blocks[3] = (Block){(Vector2){0, (screenHeight/2)+((doorSize/2)*adjacentDoors[1])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[1])}};
-  // Bottom border
-  bc.blocks[4] = (Block){(Vector2){0, screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
-  bc.blocks[5] = (Block){(Vector2){(screenWidth/2)+((doorSize/2)*adjacentDoors[2]), screenHeight - 10}, (Vector2){(screenWidth/2)-((doorSize/2)*adjacentDoors[2]), 10}};
-  // Right border
-  bc.blocks[6] = (Block){(Vector2){screenWidth - 10, 0}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
-  bc.blocks[7] = (Block){(Vector2){screenWidth - 10, (screenHeight/2)+((doorSize/2)*adjacentDoors[3])}, (Vector2){10, (screenHeight/2)-((doorSize/2)*adjacentDoors[3])}};
+  Room room = map[1][1];
 
   // set up raylib
   InitWindow(screenWidth, screenHeight, "Sprutte Game");
@@ -227,7 +272,7 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      move(&player, bc.blocks);
+      move(&player, room.blocks);
 
       player.shotCharge++;
       // Detect shooting, register new projectile
@@ -241,7 +286,7 @@ int main(void) {
 	     player.position,
 	     player.radius,
 	     pc.projectiles,
-	     bc.blocks);
+	     room.blocks);
     }
 
   // de-init
