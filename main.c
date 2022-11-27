@@ -2,7 +2,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-const int maxProjectiles = 50; // TODO make this a defconst
+#define MAX_PROJECTILES 50
+#define MAX_BLOCKS      50
 
 typedef struct Projectile {
   Vector2 position;
@@ -31,6 +32,11 @@ typedef struct Block {
   Vector2 size;
 } Block;
 
+typedef struct BlocksContainer {
+  Block* blocks; // array
+  int idx;
+} BlocksContainer;
+
 void doDraw(int mapUpper,
 	    int mapLeft,
 	    int mapWidth,
@@ -38,19 +44,20 @@ void doDraw(int mapUpper,
 	    Vector2 playerPos,
 	    int playerRadius,
 	    Projectile projectiles[],
-	    int maxProjectiles) {
+	    Block blocks[]) {
   /*
     Helper function to (re)draw everything, in the following order
     - background
     - map
     - player
     - projectiles
+    - blocks
    */
   BeginDrawing();
   ClearBackground(RAYWHITE);
   DrawRectangle(mapLeft, mapUpper, mapWidth, mapHeight, RED);
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
-  for (int i = 0; i < maxProjectiles; i++) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile p = projectiles[i];
     if (p.enabled) DrawCircleV(p.position, p.radius, BLUE);
   }
@@ -71,6 +78,10 @@ void doDraw(int mapUpper,
   // DrawRectangle(mapLeft, mapUpper, 10, (mapHeight/2)-(doorSize/2), BLACK);
   // DrawRectangle(mapLeft, (mapHeight/2)+(doorSize/2), 10 , (mapHeight/2)-(doorSize/3), BLACK);
 
+  for (int i = 0; i < MAX_BLOCKS; i++) {
+    Block b = blocks[i];
+    DrawRectangle(b.start.x, b.start.y, b.size.x, b.size.y, YELLOW);
+  }
 
   EndDrawing();
 }
@@ -88,7 +99,7 @@ void shoot(float xSpeed,
   p->radius = 5;
   p->lifeTime = 60;
   p->enabled = 1;
-  pc->idx = (pc->idx + 1) % maxProjectiles;
+  pc->idx = (pc->idx + 1) % MAX_PROJECTILES;
 }
 
 void playerShoot(Player* player, ProjectilesContainer* pc) {
@@ -111,7 +122,7 @@ void playerShoot(Player* player, ProjectilesContainer* pc) {
 }
 
 void updateProjectiles(ProjectilesContainer* pc) {
-  for (int i = 0; i < maxProjectiles; i++) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile* p = &(pc->projectiles[i]);
     if (p->enabled) {
       if (p->lifeTime == 0) { // disable if lifetime ran out
@@ -126,6 +137,7 @@ void updateProjectiles(ProjectilesContainer* pc) {
 }
 
 void move(Player* player,
+	  Block blocks[],
 	  int mapUpper,
 	  int mapLower,
 	  int mapLeft,
@@ -165,7 +177,7 @@ void move(Player* player,
     yAllowed = 0;
   }
 
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = blocks[i];
     int bStartX = b.start.x - player->radius;
     int bStartY = b.start.y - player->radius;
@@ -216,10 +228,27 @@ int main(void) {
 
   // init projectile values
   Projectile ps[50];
-  for (int i = 0; i < maxProjectiles; i++) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
     ps[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
   }
   ProjectilesContainer pc = {ps, 0};
+
+  // init block values
+  Block bs[50];
+  for (int i = 0; i < MAX_BLOCKS; i++) {
+    bs[i] = (Block){(Vector2){0,0}, (Vector2){0,0}};
+  }
+  BlocksContainer bc = {bs, 0};
+    Block b1 = {
+    {50, 50},
+    {100, 100}
+  };
+  Block b2 = {
+    {50, 40},
+    {50, 50}
+  };
+  bc.blocks[0] = b1;
+  bc.blocks[1] = b2;
 
   // set up raylib
   InitWindow(screenWidth, screenHeight, "Sprutte Game");
@@ -229,7 +258,7 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      move(&player, mapUpper, mapLower, mapLeft, mapRight);
+      move(&player, bc.blocks, mapUpper, mapLower, mapLeft, mapRight);
 
       player.shotCharge++;
       // Detect shooting, register new projectile
@@ -246,7 +275,7 @@ int main(void) {
 	     player.position,
 	     player.radius,
 	     pc.projectiles,
-	     maxProjectiles);
+	     bc.blocks);
     }
 
   // de-init
