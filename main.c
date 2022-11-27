@@ -37,10 +37,7 @@ typedef struct BlocksContainer {
   int idx;
 } BlocksContainer;
 
-void doDraw(int mapUpper,
-	    int mapLeft,
-	    int mapWidth,
-	    int mapHeight,
+void doDraw(
 	    Vector2 playerPos,
 	    int playerRadius,
 	    Projectile projectiles[],
@@ -54,8 +51,7 @@ void doDraw(int mapUpper,
     - blocks
    */
   BeginDrawing();
-  ClearBackground(RAYWHITE);
-  DrawRectangle(mapLeft, mapUpper, mapWidth, mapHeight, RED);
+  ClearBackground(RED);
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile p = projectiles[i];
@@ -120,12 +116,7 @@ void updateProjectiles(ProjectilesContainer* pc) {
   }
 }
 
-void move(Player* player,
-	  Block blocks[],
-	  int mapUpper,
-	  int mapLower,
-	  int mapLeft,
-	  int mapRight) {
+void move(Player* player, Block blocks[]) {
   Vector2 newPos = player->position;
   if (IsKeyDown(KEY_D)) {
     newPos.x += player->speed;
@@ -140,10 +131,8 @@ void move(Player* player,
     newPos.y -= player->speed;
   }
 
-
   bool xAllowed = 1;
   bool yAllowed = 1;
-
 
   for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = blocks[i];
@@ -177,13 +166,7 @@ int main(void) {
   int playerRadius       = 20;
   const int screenWidth  = 800;
   const int screenHeight = 450;
-  const int mapWidth     = screenWidth - playerRadius;
-  const int mapHeight    = screenHeight - playerRadius;
-  const int mapUpper     = 10;
-  const int mapLower     = mapUpper + mapHeight;
-  const int mapLeft      = 10;
-  const int mapRight     = mapLeft + mapWidth;
-
+  
   // init player values
   Player player = {
     { (float)screenWidth/2, (float)screenHeight/2 },
@@ -200,6 +183,18 @@ int main(void) {
     ps[i] = (Projectile){(Vector2){0,0}, (Vector2){0,0}, 0, 0, 0};
   }
   ProjectilesContainer pc = {ps, 0};
+
+  // generate map
+  Block map[11][11];
+  for (size_t i = 0; i < 11; i++)
+  {
+    for (size_t j = 0; j < 11; j++)
+    {
+      map[i][j] = NULL;
+    }
+  }
+  
+  Block bs = map[5][5]
 
   // init block values
   Block bs[50];
@@ -232,7 +227,7 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
     {
       // Player movement
-      move(&player, bc.blocks, mapUpper, mapLower, mapLeft, mapRight);
+      move(&player, bc.blocks);
 
       player.shotCharge++;
       // Detect shooting, register new projectile
@@ -242,10 +237,7 @@ int main(void) {
       updateProjectiles(&pc);
 
       // draw everything
-      doDraw(mapUpper,
-	     mapLeft,
-	     mapWidth,
-	     mapHeight,
+      doDraw(
 	     player.position,
 	     player.radius,
 	     pc.projectiles,
