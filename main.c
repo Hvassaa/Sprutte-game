@@ -48,7 +48,7 @@ void doDraw(int mapUpper,
    */
   BeginDrawing();
   ClearBackground(RAYWHITE);
-  DrawRectangle(mapUpper, mapLeft, mapWidth, mapHeight, RED);
+  DrawRectangle(mapLeft, mapUpper, mapWidth, mapHeight, RED);
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
   for (int i = 0; i < maxProjectiles; i++) {
     Projectile p = projectiles[i];
@@ -58,6 +58,18 @@ void doDraw(int mapUpper,
 
   DrawRectangle(50, 50, 100, 100, YELLOW);
   DrawRectangle(50, 40, 50, 50, WHITE);
+  int doorSize = 70;
+  DrawRectangle(mapLeft, mapUpper, (mapWidth/2)-(doorSize/2)+5, 10, BLACK);
+  DrawRectangle((mapWidth/2)+(doorSize/2), mapUpper, (mapWidth/2)-(doorSize/2)+5, 10, BLACK);
+  // //draw upper border
+  // DrawRectangle(mapLeft, mapUpper, (mapWidth/2)-(doorSize/2), 10, BLACK);
+  // DrawRectangle((mapWidth/2)+(doorSize/2), mapUpper, (mapWidth/2)-(doorSize/3), 10, BLACK);
+  // //draw lower border
+  // DrawRectangle(mapLeft, mapHeight, (mapWidth/2)-(doorSize/2), 10, BLACK);
+  // DrawRectangle((mapWidth/2)+(doorSize/2), mapHeight, (mapWidth/2)-(doorSize/3), 10, BLACK);
+  // //draw left border
+  // DrawRectangle(mapLeft, mapUpper, 10, (mapHeight/2)-(doorSize/2), BLACK);
+  // DrawRectangle(mapLeft, (mapHeight/2)+(doorSize/2), 10 , (mapHeight/2)-(doorSize/3), BLACK);
 
 
   EndDrawing();
@@ -131,6 +143,8 @@ void move(Player* player,
   if (IsKeyDown(KEY_W)) {
     newPos.y -= player->speed;
   }
+
+
 
   Block b1 = {
     {50, 50},
