@@ -181,14 +181,51 @@ int move(Player *player, Block blocks[], int roomIdx) {
       }
     }
   }
+  float yChange = 0;
+  float xChange = 0;
   if (xAllowed) {
-    player->position.y = player->position.y + forceY * player->speed;
+    if ((player->position.y < newPos.y && player->position.x > newPos.x &&
+         forceY == 1) ||                                  // down left
+        (player->position.x > newPos.x && forceY != 0) || // left
+        (player->position.y < newPos.y && player->position.x < newPos.x &&
+         forceY == 1) ||                                  // down right
+        (player->position.x < newPos.x && forceY != 0) || // right
+        (player->position.y > newPos.y && player->position.x > newPos.x &&
+         forceY == -1) || // up left
+        (player->position.y > newPos.y && player->position.x < newPos.x &&
+         forceY == -1) // up right
+    ) {
+      printf("1\n");
+      // player->position.y =
+      yChange = player->position.y + forceY * player->speed;
+      /* player->position.x = newPos.x; */
+      xChange = newPos.x;
+    }
     player->position.x = newPos.x;
-
   }
   if (yAllowed) {
+    if ((player->position.x < newPos.x && player->position.y > newPos.y &&
+         forceX == 1) ||                                  // right up
+        (player->position.y > newPos.y && forceX != 0) || // up
+        (player->position.x < newPos.x && player->position.y < newPos.y &&
+         forceX == 1) ||                                  // right down
+        (player->position.y < newPos.y && forceX != 0) || // down
+        (player->position.x > newPos.x && player->position.y > newPos.y &&
+         forceX == -1) || // left up
+        (player->position.x > newPos.x && player->position.y < newPos.y &&
+         forceX == -1) // left down
+    ) {
+      printf("2\n");
+      player->position.x = player->position.x + forceX * player->speed;
+    }
     player->position.y = newPos.y;
-    player->position.x = player->position.x + forceX * player->speed;
+  }
+
+  if (xChange != 0) {
+    player->position.x = xChange;
+  }
+  if (yChange != 0) {
+    player->position.y = yChange;
   }
 
   if (player->position.x < 0) {
