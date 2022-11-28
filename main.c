@@ -144,24 +144,41 @@ int move(Player* player, Block blocks[], int roomIdx) {
 
   bool xAllowed = 1;
   bool yAllowed = 1;
+  int rad = player->radius;
 
   for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = blocks[i];
-    int bStartX = b.start.x - player->radius;
-    int bStartY = b.start.y - player->radius;
-    int bEndX = b.start.x + b.size.x + player->radius;
-    int bEndY = b.start.y + b.size.y + player->radius;
-    if(player->position.y <= bEndY &&
-       player->position.y >= bStartY &&
-       (newPos.x <= bEndX &&
-	newPos.x >= bStartX)) {
-      xAllowed = 0;
+    int bStartX = b.start.x;// - player->radius;
+    int bStartY = b.start.y;// - player->radius;
+    int bEndX = b.start.x + b.size.x;// + player->radius;
+    int bEndY = b.start.y + b.size.y;// + player->radius;
+
+    
+
+  /*   bool freeX = newPos.x < bStartX || newPos.x > bEndX; */
+  /*   bool freeY = newPos.y < bStartY || newPos.y > bEndY; */
+
+    if(player->position.y < bEndY + rad &&
+       player->position.y > bStartY - rad &&
+       (newPos.x < bEndX + rad  &&
+	newPos.x > bStartX - rad)) {
+      if(!(newPos.y > bEndY || newPos.y < bStartY)) {
+	xAllowed = 0;	
+      } else {
+	printf("X\n");
+      }
     }
-    if(player->position.x <= bEndX &&
-       player->position.x >= bStartX &&
-       (newPos.y <= bEndY &&
-	newPos.y >= bStartY)) {
-      yAllowed = 0;
+
+    if(player->position.x < bEndX + rad &&
+       player->position.x > bStartX - rad &&
+       (newPos.y < bEndY + rad &&
+	newPos.y > bStartY - rad)) {
+      if(!(newPos.x > bEndX || newPos.x < bStartX)) {
+	yAllowed = 0;
+      } else {
+	printf("Y\n");
+      }
+      
     }
   }
   if(xAllowed) {
@@ -182,30 +199,6 @@ int move(Player* player, Block blocks[], int roomIdx) {
   } else {
     return roomIdx;
   }
-}
-
-Room initializeRoom(int i, int j, bool doors[], int doorSize) {
-  Block blocks[MAX_BLOCKS];
-  // Top border
-  blocks[0] = (Block){(Vector2){0, 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[0]), 10}};
-  blocks[1] = (Block){(Vector2){(SCREEN_WIDTH/2)+((doorSize/2)*doors[0]), 0}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[0]), 10}};
-  // Left border
-  blocks[2] = (Block){(Vector2){0, 0}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[1])}};
-  blocks[3] = (Block){(Vector2){0, (SCREEN_HEIGHT/2)+((doorSize/2)*doors[1])}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[1])}};
-  // Bottom border
-  blocks[4] = (Block){(Vector2){0, SCREEN_HEIGHT - 10}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[2]), 10}};
-  blocks[5] = (Block){(Vector2){(SCREEN_WIDTH/2)+((doorSize/2)*doors[2]), SCREEN_HEIGHT - 10}, (Vector2){(SCREEN_WIDTH/2)-((doorSize/2)*doors[2]), 10}};
-  // Right border
-  blocks[6] = (Block){(Vector2){SCREEN_WIDTH - 10, 0}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[3])}};
-  blocks[7] = (Block){(Vector2){SCREEN_WIDTH - 10, (SCREEN_HEIGHT/2)+((doorSize/2)*doors[3])}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*doors[3])}};
-  Room room = {
-    blocks,
-    i,
-    j,
-    1
-  };
-  
-  return room;
 }
 
 int main(void) {
@@ -288,6 +281,7 @@ int main(void) {
 	// Right border
 	blocks[6] = (Block){(Vector2){SCREEN_WIDTH - 10, 0}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*adjacentDoors[3])}};
 	blocks[7] = (Block){(Vector2){SCREEN_WIDTH - 10, (SCREEN_HEIGHT/2)+((doorSize/2)*adjacentDoors[3])}, (Vector2){10, (SCREEN_HEIGHT/2)-((doorSize/2)*adjacentDoors[3])}};
+	blocks[8] = (Block){(Vector2){100, 100},(Vector2){50,50}};
 	Room room = {
 	  blocks,
 	  i,
