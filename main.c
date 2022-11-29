@@ -46,10 +46,11 @@ typedef struct Room {
   int x;
   int y;
   bool enabled;
+  Color color;
 } Room;
 
 void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
-            Block blocks[]) {
+            Room room) {
   /*
     Helper function to (re)draw everything, in the following order
     - background
@@ -59,7 +60,7 @@ void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
     - blocks
    */
   BeginDrawing();
-  ClearBackground(RED);
+  ClearBackground(room.color);
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile p = projectiles[i];
@@ -68,10 +69,11 @@ void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
   }
 
   for (int i = 0; i < MAX_BLOCKS; i++) {
-    Block b = blocks[i];
+    Block b = room.blocks[i];
     DrawRectangle(b.start.x, b.start.y, b.size.x, b.size.y, YELLOW);
   }
 
+  DrawFPS(11, 11);
   EndDrawing();
 }
 
@@ -123,7 +125,14 @@ void updateProjectiles(ProjectilesContainer *pc) {
   }
 }
 
-int move(Player *player, Block blocks[], int roomIdx) {
+void resetProjectiles(ProjectilesContainer *pc) {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    Projectile *p = &(pc->projectiles[i]);
+    p->enabled = 0;
+  }
+}
+
+int move(Player *player, Room room, int roomIdx) {
   Vector2 newPos = player->position;
   if (IsKeyDown(KEY_D)) {
     newPos.x += player->speed;
@@ -145,7 +154,7 @@ int move(Player *player, Block blocks[], int roomIdx) {
   int rad = player->radius;
 
   for (int i = 0; i < MAX_BLOCKS; i++) {
-    Block b = blocks[i];
+    Block b = room.blocks[i];
     int bStartX = b.start.x;          // - player->radius;
     int bStartY = b.start.y;          // - player->radius;
     int bEndX = b.start.x + b.size.x; // + player->radius;
@@ -262,11 +271,21 @@ int main(void) {
   }
   ProjectilesContainer pc = {ps, 0};
 
-  int doorSize = 70;
   // generate map
-
-  //
+  int doorSize = 70;
+  // enabled rooms
   bool rooms[R * R] = {0, 0, 1, 1, 1, 1, 0, 1, 1};
+  Color roomCols[R * R] = {
+    BLACK,
+    BLACK,
+    LIGHTGRAY,
+    PINK,
+    BEIGE,
+    MAGENTA,
+    BLACK,
+    MAROON,
+    VIOLET
+  };
   Room *map = malloc((R * R) * sizeof *map);
 
   for (size_t i = 0; i < R; i++) {
@@ -338,7 +357,7 @@ int main(void) {
                     (Vector2){10, (SCREEN_HEIGHT / 2) -
                                       ((doorSize / 2) * adjacentDoors[3])}};
         blocks[8] = (Block){(Vector2){100, 100}, (Vector2){50, 50}};
-        Room room = {blocks, i, j, 1};
+        Room room = {blocks, i, j, 1, roomCols[realIdx]};
         map[realIdx] = room;
       }
     }
@@ -355,7 +374,7 @@ int main(void) {
   while (!WindowShouldClose()) // Detect window close button or ESC key
   {
     // Player movement
-    int a = move(&player, room.blocks, curRoom);
+    int a = move(&player, room, curRoom);
     if (a != curRoom) {
       if (a == curRoom + 1) {
         player.position.x = 1;
@@ -368,6 +387,7 @@ int main(void) {
       }
       curRoom = a;
       room = map[curRoom];
+      resetProjectiles(&pc);
     }
 
     player.shotCharge++;
@@ -378,7 +398,7 @@ int main(void) {
     updateProjectiles(&pc);
 
     // draw everything
-    doDraw(player.position, player.radius, pc.projectiles, room.blocks);
+    doDraw(player.position, player.radius, pc.projectiles, room);
   }
 
   // de-init
