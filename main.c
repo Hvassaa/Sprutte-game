@@ -61,13 +61,15 @@ void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
    */
   BeginDrawing();
   ClearBackground(room.color);
+  // draw player
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
+  // draw live projectiles
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile p = projectiles[i];
     if (p.enabled)
       DrawCircleV(p.position, p.radius, BLUE);
   }
-
+  // draw border and other blocks
   for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = room.blocks[i];
     DrawRectangle(b.start.x, b.start.y, b.size.x, b.size.y, YELLOW);
@@ -155,19 +157,23 @@ int move(Player *player, Room room, int roomIdx) {
 
   for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = room.blocks[i];
-    int bStartX = b.start.x;          // - player->radius;
-    int bStartY = b.start.y;          // - player->radius;
-    int bEndX = b.start.x + b.size.x; // + player->radius;
-    int bEndY = b.start.y + b.size.y; // + player->radius;
+    int bStartX = b.start.x;         
+    int bStartY = b.start.y;         
+    int bEndX = b.start.x + b.size.x;
+    int bEndY = b.start.y + b.size.y;
 
-    if (player->position.y < bEndY + rad &&
-        player->position.y > bStartY - rad &&
-        (newPos.x < bEndX + rad && newPos.x > bStartX - rad)) {
-      // colliding from left or right
-      if (newPos.y > bEndY) {
+    // colliding from left or right
+    // if player center is not within Y-interval, allow sliding around corner
+    bool playerOverBottomOfBlock = player->position.y < bEndY + rad;
+    bool playerUnderTopOfBlock = player->position.y > bStartY - rad;
+    bool newPosInsideXInterval = newPos.x < bEndX + rad && newPos.x > bStartX - rad;
+    if (playerOverBottomOfBlock && playerUnderTopOfBlock && newPosInsideXInterval) {
+      bool playerCenterBelowBlock = newPos.y > bEndY;
+      bool playerCenterAboveBlock = newPos.y < bStartY;
+      if (playerCenterBelowBlock) {
         // force down
         forceY = 1;
-      } else if (newPos.y < bStartY) {
+      } else if (playerCenterAboveBlock) {
         // force up
         forceY = -1;
       } else {
@@ -175,14 +181,18 @@ int move(Player *player, Room room, int roomIdx) {
       }
     }
 
-    if (player->position.x < bEndX + rad &&
-        player->position.x > bStartX - rad &&
-        (newPos.y < bEndY + rad && newPos.y > bStartY - rad)) {
-      // colliding from up or down
-      if (newPos.x > bEndX) {
+    // colliding from top or bottom
+    // if player center is not within X-interval, allow sliding around corner
+    bool playerLeftOfRightBlockSide = player->position.x < bEndX + rad;
+    bool playerRightOfLeftBlockSide = player->position.x > bStartX - rad;
+    bool newPosInsideYInterval = newPos.y < bEndY + rad && newPos.y > bStartY - rad;
+    if (playerLeftOfRightBlockSide && playerRightOfLeftBlockSide && newPosInsideYInterval) {
+      bool playerCenterRightOfBlock = newPos.x > bEndX;
+      bool playerCenterLeftOfBlock = newPos.x < bStartX;
+      if (playerCenterRightOfBlock) {
         // force right
         forceX = 1;
-      } else if (newPos.x < bStartX) {
+      } else if (playerCenterLeftOfBlock) {
         // force left
         forceX = -1;
       } else {
@@ -190,44 +200,35 @@ int move(Player *player, Room room, int roomIdx) {
       }
     }
   }
+
   float yChange = 0;
   float xChange = 0;
+  // allow moving on X-axis
   if (xAllowed) {
-    if ((player->position.y < newPos.y && player->position.x > newPos.x &&
-         forceY == 1) ||                                  // down left
-        (player->position.x > newPos.x && forceY != 0) || // left
-        (player->position.y < newPos.y && player->position.x < newPos.x &&
-         forceY == 1) ||                                  // down right
-        (player->position.x < newPos.x && forceY != 0) || // right
-        (player->position.y > newPos.y && player->position.x > newPos.x &&
-         forceY == -1) || // up left
-        (player->position.y > newPos.y && player->position.x < newPos.x &&
-         forceY == -1) // up right
-    ) {
-      printf("1\n");
-      // player->position.y =
+    // check if sliding allowed
+    bool movingLeftOrRightAndShouldSlide = ((player->position.x > newPos.x || player->position.x < newPos.x) && forceY != 0);
+    bool movingDownLeftOrRightAndShouldSlide = (player->position.y < newPos.y && (player->position.x < newPos.x || player->position.x > newPos.x) && forceY == 1);
+    bool movingUpLeftOrRightAndShouldSlide = (player->position.y > newPos.y && (player->position.x > newPos.x || player->position.x < newPos.x) && forceY == -1);
+    if (movingLeftOrRightAndShouldSlide || movingDownLeftOrRightAndShouldSlide || movingUpLeftOrRightAndShouldSlide) {
       yChange = player->position.y + forceY * player->speed;
-      /* player->position.x = newPos.x; */
       xChange = newPos.x;
     }
-    player->position.x = newPos.x;
-  }
-  if (yAllowed) {
-    if ((player->position.x < newPos.x && player->position.y > newPos.y &&
-         forceX == 1) ||                                  // right up
-        (player->position.y > newPos.y && forceX != 0) || // up
-        (player->position.x < newPos.x && player->position.y < newPos.y &&
-         forceX == 1) ||                                  // right down
-        (player->position.y < newPos.y && forceX != 0) || // down
-        (player->position.x > newPos.x && player->position.y > newPos.y &&
-         forceX == -1) || // left up
-        (player->position.x > newPos.x && player->position.y < newPos.y &&
-         forceX == -1) // left down
-    ) {
-      printf("2\n");
-      player->position.x = player->position.x + forceX * player->speed;
+    else { // moving left or right, unhindered
+      player->position.x = newPos.x;
     }
-    player->position.y = newPos.y;
+  }
+  // allow moving on Y-axis
+  if (yAllowed) {
+    // check if sliding allowed
+    bool movingUpOrDownAndShouldSlide = ((player->position.y > newPos.y || player->position.y < newPos.y) && forceX != 0);
+    bool movingRightUpOrDownAndShouldSlide = (player->position.x < newPos.x && (player->position.y > newPos.y || player->position.y < newPos.y) && forceX == 1);
+    bool movingLeftUpOrDownAndShouldSlide = (player->position.x > newPos.x && (player->position.y > newPos.y || player->position.y < newPos.y) && forceX == -1);
+    if (movingUpOrDownAndShouldSlide || movingRightUpOrDownAndShouldSlide ||movingLeftUpOrDownAndShouldSlide) {
+      xChange = player->position.x + forceX * player->speed;
+    }
+    else { // moving up or down, unhindered
+      player->position.y = newPos.y;
+    }
   }
 
   if (xChange != 0) {
