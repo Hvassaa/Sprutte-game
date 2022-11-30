@@ -6,11 +6,11 @@
 #define MAX_PROJECTILES 50
 #define MAX_BLOCKS 50
 #define R 3
-#define WALL_THICKNESS 10
-#define DOORSIZE 70
-#define BLOCK_SIZE 50
-/* #define SCREEN_WIDTH 800 */
-/* #define SCREEN_HEIGHT 450 */
+#define SCALE 2.0
+#define WALL_THICKNESS (9 * SCALE)
+#define DOORSIZE (70 * SCALE)
+#define BLOCK_SIZE (50 * SCALE)
+#define STARTING_PLAYER_RADIUS ((BLOCK_SIZE / 2) - SCALE)
 #define SCREEN_WIDTH (BLOCK_SIZE * 11 + WALL_THICKNESS * 2)
 #define SCREEN_HEIGHT (BLOCK_SIZE * 7 + WALL_THICKNESS * 2)
 
@@ -88,7 +88,7 @@ void shoot(float xSpeed, float ySpeed, Vector2 origin,
   Projectile *p = &(pc->projectiles[pc->idx]);
   p->position = origin;
   p->speed = (Vector2){xSpeed, ySpeed};
-  p->radius = 5;
+  p->radius = 5 * SCALE;
   p->lifeTime = 60;
   p->enabled = 1;
   pc->idx = (pc->idx + 1) % MAX_PROJECTILES;
@@ -275,17 +275,15 @@ int move(Player *player, Room room, int roomIdx) {
 
 int main(void) {
   // init map values
-  int playerRadius = 20;
-  /* const int SCREEN_WIDTH  = 800; */
-  /* const int SCREEN_HEIGHT = 450; */
+  int playerRadius = STARTING_PLAYER_RADIUS;
 
   // init player values
   Player player = {{(float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2},
-                   2.0f,
-                   playerRadius,
+                   2.0f * SCALE,
+                   (playerRadius),
                    8,
                    8,
-                   5.0f};
+                   5.0f * SCALE};
 
   // init projectile values
   Projectile ps[50];
@@ -369,7 +367,7 @@ int main(void) {
                                   ((DOORSIZE / 2) * adjacentDoors[3])},
                     (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
                                       ((DOORSIZE / 2) * adjacentDoors[3])}};
-        blocks[8] = (Block){(Vector2){100, 100}, (Vector2){50, 50}};
+        blocks[8] = (Block){(Vector2){100 * SCALE, 100 * SCALE}, (Vector2){BLOCK_SIZE, BLOCK_SIZE}};
         Room room = {blocks, i, j, 1, roomCols[realIdx]};
         map[realIdx] = room;
       }
