@@ -6,10 +6,13 @@
 #define MAX_PROJECTILES 50
 #define MAX_BLOCKS 50
 #define R 3
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 450
 #define WALL_THICKNESS 10
 #define DOORSIZE 70
+#define BLOCK_SIZE 50
+/* #define SCREEN_WIDTH 800 */
+/* #define SCREEN_HEIGHT 450 */
+#define SCREEN_WIDTH (BLOCK_SIZE * 11 + WALL_THICKNESS * 2)
+#define SCREEN_HEIGHT (BLOCK_SIZE * 7 + WALL_THICKNESS * 2)
 
 typedef struct Projectile {
   Vector2 position;
