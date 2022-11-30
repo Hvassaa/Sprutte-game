@@ -8,6 +8,8 @@
 #define R 3
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 450
+#define WALL_THICKNESS 10
+#define DOORSIZE 70
 
 typedef struct Projectile {
   Vector2 position;
@@ -31,6 +33,7 @@ typedef struct ProjectilesContainer {
   int idx;
 } ProjectilesContainer;
 
+// Maybe 11 x  7
 typedef struct Block {
   Vector2 start;
   Vector2 size;
@@ -152,8 +155,8 @@ int move(Player *player, Room room, int roomIdx) {
 
   for (int i = 0; i < MAX_BLOCKS; i++) {
     Block b = room.blocks[i];
-    int bStartX = b.start.x;         
-    int bStartY = b.start.y;         
+    int bStartX = b.start.x;
+    int bStartY = b.start.y;
     int bEndX = b.start.x + b.size.x;
     int bEndY = b.start.y + b.size.y;
 
@@ -161,8 +164,10 @@ int move(Player *player, Room room, int roomIdx) {
     // if player center is not within Y-interval, allow sliding around corner
     bool playerOverBottomOfBlock = player->position.y < bEndY + rad;
     bool playerUnderTopOfBlock = player->position.y > bStartY - rad;
-    bool newPosInsideXInterval = newPos.x < bEndX + rad && newPos.x > bStartX - rad;
-    if (playerOverBottomOfBlock && playerUnderTopOfBlock && newPosInsideXInterval) {
+    bool newPosInsideXInterval =
+        newPos.x < bEndX + rad && newPos.x > bStartX - rad;
+    if (playerOverBottomOfBlock && playerUnderTopOfBlock &&
+        newPosInsideXInterval) {
       bool playerCenterBelowBlock = newPos.y > bEndY;
       bool playerCenterAboveBlock = newPos.y < bStartY;
       if (playerCenterBelowBlock) {
@@ -180,8 +185,10 @@ int move(Player *player, Room room, int roomIdx) {
     // if player center is not within X-interval, allow sliding around corner
     bool playerLeftOfRightBlockSide = player->position.x < bEndX + rad;
     bool playerRightOfLeftBlockSide = player->position.x > bStartX - rad;
-    bool newPosInsideYInterval = newPos.y < bEndY + rad && newPos.y > bStartY - rad;
-    if (playerLeftOfRightBlockSide && playerRightOfLeftBlockSide && newPosInsideYInterval) {
+    bool newPosInsideYInterval =
+        newPos.y < bEndY + rad && newPos.y > bStartY - rad;
+    if (playerLeftOfRightBlockSide && playerRightOfLeftBlockSide &&
+        newPosInsideYInterval) {
       bool playerCenterRightOfBlock = newPos.x > bEndX;
       bool playerCenterLeftOfBlock = newPos.x < bStartX;
       if (playerCenterRightOfBlock) {
@@ -201,27 +208,44 @@ int move(Player *player, Room room, int roomIdx) {
   // allow moving on X-axis
   if (xAllowed) {
     // check if sliding allowed
-    bool movingLeftOrRightAndShouldSlide = ((player->position.x > newPos.x || player->position.x < newPos.x) && forceY != 0);
-    bool movingDownLeftOrRightAndShouldSlide = (player->position.y < newPos.y && (player->position.x < newPos.x || player->position.x > newPos.x) && forceY == 1);
-    bool movingUpLeftOrRightAndShouldSlide = (player->position.y > newPos.y && (player->position.x > newPos.x || player->position.x < newPos.x) && forceY == -1);
-    if (movingLeftOrRightAndShouldSlide || movingDownLeftOrRightAndShouldSlide || movingUpLeftOrRightAndShouldSlide) {
+    bool movingLeftOrRightAndShouldSlide =
+        ((player->position.x > newPos.x || player->position.x < newPos.x) &&
+         forceY != 0);
+    bool movingDownLeftOrRightAndShouldSlide =
+        (player->position.y < newPos.y &&
+         (player->position.x < newPos.x || player->position.x > newPos.x) &&
+         forceY == 1);
+    bool movingUpLeftOrRightAndShouldSlide =
+        (player->position.y > newPos.y &&
+         (player->position.x > newPos.x || player->position.x < newPos.x) &&
+         forceY == -1);
+    if (movingLeftOrRightAndShouldSlide ||
+        movingDownLeftOrRightAndShouldSlide ||
+        movingUpLeftOrRightAndShouldSlide) {
       yChange = player->position.y + forceY * player->speed;
       xChange = newPos.x;
-    }
-    else { // moving left or right, unhindered
+    } else { // moving left or right, unhindered
       player->position.x = newPos.x;
     }
   }
   // allow moving on Y-axis
   if (yAllowed) {
     // check if sliding allowed
-    bool movingUpOrDownAndShouldSlide = ((player->position.y > newPos.y || player->position.y < newPos.y) && forceX != 0);
-    bool movingRightUpOrDownAndShouldSlide = (player->position.x < newPos.x && (player->position.y > newPos.y || player->position.y < newPos.y) && forceX == 1);
-    bool movingLeftUpOrDownAndShouldSlide = (player->position.x > newPos.x && (player->position.y > newPos.y || player->position.y < newPos.y) && forceX == -1);
-    if (movingUpOrDownAndShouldSlide || movingRightUpOrDownAndShouldSlide ||movingLeftUpOrDownAndShouldSlide) {
+    bool movingUpOrDownAndShouldSlide =
+        ((player->position.y > newPos.y || player->position.y < newPos.y) &&
+         forceX != 0);
+    bool movingRightUpOrDownAndShouldSlide =
+        (player->position.x < newPos.x &&
+         (player->position.y > newPos.y || player->position.y < newPos.y) &&
+         forceX == 1);
+    bool movingLeftUpOrDownAndShouldSlide =
+        (player->position.x > newPos.x &&
+         (player->position.y > newPos.y || player->position.y < newPos.y) &&
+         forceX == -1);
+    if (movingUpOrDownAndShouldSlide || movingRightUpOrDownAndShouldSlide ||
+        movingLeftUpOrDownAndShouldSlide) {
       xChange = player->position.x + forceX * player->speed;
-    }
-    else { // moving up or down, unhindered
+    } else { // moving up or down, unhindered
       player->position.y = newPos.y;
     }
   }
@@ -268,20 +292,10 @@ int main(void) {
   ProjectilesContainer pc = {ps, 0};
 
   // generate map
-  int doorSize = 70;
   // enabled rooms
   bool rooms[R * R] = {0, 0, 1, 1, 1, 1, 0, 1, 1};
-  Color roomCols[R * R] = {
-    BLACK,
-    BLACK,
-    LIGHTGRAY,
-    PINK,
-    BEIGE,
-    MAGENTA,
-    BLACK,
-    MAROON,
-    VIOLET
-  };
+  Color roomCols[R * R] = {BLACK,   BLACK, LIGHTGRAY, PINK,  BEIGE,
+                           MAGENTA, BLACK, MAROON,    VIOLET};
   Room *map = malloc((R * R) * sizeof *map);
 
   for (size_t i = 0; i < R; i++) {
@@ -314,44 +328,44 @@ int main(void) {
         // Top border
         blocks[0] = (Block){
             (Vector2){0, 0},
-            (Vector2){(SCREEN_WIDTH / 2) - ((doorSize / 2) * adjacentDoors[0]),
-                      10}};
+            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
+                      WALL_THICKNESS}};
         blocks[1] = (Block){
-            (Vector2){(SCREEN_WIDTH / 2) + ((doorSize / 2) * adjacentDoors[0]),
+            (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[0]),
                       0},
-            (Vector2){(SCREEN_WIDTH / 2) - ((doorSize / 2) * adjacentDoors[0]),
-                      10}};
+            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
+                      WALL_THICKNESS}};
         // Left border
         blocks[2] =
             (Block){(Vector2){0, 0},
-                    (Vector2){10, (SCREEN_HEIGHT / 2) -
-                                      ((doorSize / 2) * adjacentDoors[1])}};
+                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+                                      ((DOORSIZE / 2) * adjacentDoors[1])}};
         blocks[3] =
             (Block){(Vector2){0, (SCREEN_HEIGHT / 2) +
-                                     ((doorSize / 2) * adjacentDoors[1])},
-                    (Vector2){10, (SCREEN_HEIGHT / 2) -
-                                      ((doorSize / 2) * adjacentDoors[1])}};
+                                     ((DOORSIZE / 2) * adjacentDoors[1])},
+                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+                                      ((DOORSIZE / 2) * adjacentDoors[1])}};
         // Bottom border
         blocks[4] = (Block){
-            (Vector2){0, SCREEN_HEIGHT - 10},
-            (Vector2){(SCREEN_WIDTH / 2) - ((doorSize / 2) * adjacentDoors[2]),
-                      10}};
+            (Vector2){0, SCREEN_HEIGHT - WALL_THICKNESS},
+            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
+                      WALL_THICKNESS}};
         blocks[5] = (Block){
-            (Vector2){(SCREEN_WIDTH / 2) + ((doorSize / 2) * adjacentDoors[2]),
-                      SCREEN_HEIGHT - 10},
-            (Vector2){(SCREEN_WIDTH / 2) - ((doorSize / 2) * adjacentDoors[2]),
-                      10}};
+            (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[2]),
+                      SCREEN_HEIGHT - WALL_THICKNESS},
+            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
+                      WALL_THICKNESS}};
         // Right border
         blocks[6] =
-            (Block){(Vector2){SCREEN_WIDTH - 10, 0},
-                    (Vector2){10, (SCREEN_HEIGHT / 2) -
-                                      ((doorSize / 2) * adjacentDoors[3])}};
+            (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS, 0},
+                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+                                      ((DOORSIZE / 2) * adjacentDoors[3])}};
         blocks[7] =
-            (Block){(Vector2){SCREEN_WIDTH - 10,
+            (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS,
                               (SCREEN_HEIGHT / 2) +
-                                  ((doorSize / 2) * adjacentDoors[3])},
-                    (Vector2){10, (SCREEN_HEIGHT / 2) -
-                                      ((doorSize / 2) * adjacentDoors[3])}};
+                                  ((DOORSIZE / 2) * adjacentDoors[3])},
+                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+                                      ((DOORSIZE / 2) * adjacentDoors[3])}};
         blocks[8] = (Block){(Vector2){100, 100}, (Vector2){50, 50}};
         Room room = {blocks, i, j, 1, roomCols[realIdx]};
         map[realIdx] = room;
