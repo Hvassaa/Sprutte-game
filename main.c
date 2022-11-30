@@ -36,11 +36,6 @@ typedef struct Block {
   Vector2 size;
 } Block;
 
-typedef struct BlocksContainer {
-  Block *blocks; // array
-  int idx;
-} BlocksContainer;
-
 typedef struct Room {
   Block *blocks;
   int x;
