@@ -273,6 +273,51 @@ int move(Player *player, Room room, int roomIdx) {
   }
 }
 
+Block* makeWall(bool* adjacentDoors) {
+  Block* blocks = malloc(8 * sizeof *blocks);
+  blocks[0] = (Block){
+    (Vector2){0, 0},
+    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
+	      WALL_THICKNESS}};
+  blocks[1] = (Block){
+    (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[0]),
+	      0},
+    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
+	      WALL_THICKNESS}};
+  // Left border
+  blocks[2] =
+    (Block){(Vector2){0, 0},
+	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+		      ((DOORSIZE / 2) * adjacentDoors[1])}};
+  blocks[3] =
+    (Block){(Vector2){0, (SCREEN_HEIGHT / 2) +
+		      ((DOORSIZE / 2) * adjacentDoors[1])},
+	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+		      ((DOORSIZE / 2) * adjacentDoors[1])}};
+  // Bottom border
+  blocks[4] = (Block){
+    (Vector2){0, SCREEN_HEIGHT - WALL_THICKNESS},
+    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
+	      WALL_THICKNESS}};
+  blocks[5] = (Block){
+    (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[2]),
+	      SCREEN_HEIGHT - WALL_THICKNESS},
+    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
+	      WALL_THICKNESS}};
+  // Right border
+  blocks[6] =
+    (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS, 0},
+	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+		      ((DOORSIZE / 2) * adjacentDoors[3])}};
+  blocks[7] =
+    (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS,
+		      (SCREEN_HEIGHT / 2) +
+		      ((DOORSIZE / 2) * adjacentDoors[3])},
+	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
+		      ((DOORSIZE / 2) * adjacentDoors[3])}};
+  return blocks;
+}
+
 int main(void) {
   // init map values
   int playerRadius = STARTING_PLAYER_RADIUS;
@@ -326,47 +371,10 @@ int main(void) {
         bool adjacentDoors[4] = {up, left, down, right};
 
         Block *blocks = malloc(MAX_BLOCKS * sizeof *blocks);
-        // Top border
-        blocks[0] = (Block){
-            (Vector2){0, 0},
-            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
-                      WALL_THICKNESS}};
-        blocks[1] = (Block){
-            (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[0]),
-                      0},
-            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
-                      WALL_THICKNESS}};
-        // Left border
-        blocks[2] =
-            (Block){(Vector2){0, 0},
-                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-                                      ((DOORSIZE / 2) * adjacentDoors[1])}};
-        blocks[3] =
-            (Block){(Vector2){0, (SCREEN_HEIGHT / 2) +
-                                     ((DOORSIZE / 2) * adjacentDoors[1])},
-                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-                                      ((DOORSIZE / 2) * adjacentDoors[1])}};
-        // Bottom border
-        blocks[4] = (Block){
-            (Vector2){0, SCREEN_HEIGHT - WALL_THICKNESS},
-            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
-                      WALL_THICKNESS}};
-        blocks[5] = (Block){
-            (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[2]),
-                      SCREEN_HEIGHT - WALL_THICKNESS},
-            (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
-                      WALL_THICKNESS}};
-        // Right border
-        blocks[6] =
-            (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS, 0},
-                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-                                      ((DOORSIZE / 2) * adjacentDoors[3])}};
-        blocks[7] =
-            (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS,
-                              (SCREEN_HEIGHT / 2) +
-                                  ((DOORSIZE / 2) * adjacentDoors[3])},
-                    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-                                      ((DOORSIZE / 2) * adjacentDoors[3])}};
+	Block* walls = makeWall(adjacentDoors);
+	for(int i = 0; i < 8; i++) {
+	  blocks[i] = walls[i];
+	}
         blocks[8] = (Block){(Vector2){100 * SCALE, 100 * SCALE}, (Vector2){BLOCK_SIZE, BLOCK_SIZE}};
         Room room = {blocks, i, j, 1, roomCols[realIdx]};
         map[realIdx] = room;
@@ -413,6 +421,10 @@ int main(void) {
   }
 
   // de-init
+  // How much should be freed???
+  for(int i = 0; i < R * R; i++) {
+    free(map[i].blocks);
+  }
   free(map);
   CloseWindow();
   return 0;
