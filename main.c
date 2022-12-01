@@ -318,6 +318,16 @@ Block* makeWall(bool* adjacentDoors) {
   return blocks;
 }
 
+Block makeBlock(int x, int y) {
+  int realX = WALL_THICKNESS + x * BLOCK_SIZE;
+  int realY = WALL_THICKNESS + y * BLOCK_SIZE;
+  Block b = {
+    (Vector2){realX, realY},
+    (Vector2){BLOCK_SIZE, BLOCK_SIZE},
+  };
+  return b;
+}
+
 int main(void) {
   // init map values
   int playerRadius = STARTING_PLAYER_RADIUS;
@@ -375,7 +385,9 @@ int main(void) {
 	for(int i = 0; i < 8; i++) {
 	  blocks[i] = walls[i];
 	}
-        blocks[8] = (Block){(Vector2){100 * SCALE, 100 * SCALE}, (Vector2){BLOCK_SIZE, BLOCK_SIZE}};
+        blocks[8] = makeBlock(1,1);
+	blocks[9] = makeBlock(3,5);
+	blocks[10] = makeBlock(3, 1);
         Room room = {blocks, i, j, 1, roomCols[realIdx]};
         map[realIdx] = room;
       }
