@@ -19,7 +19,25 @@
 | "evil"    | anglerfish |
 | skull     | fish-bone  |
 
-## Language/framework
+# Prerequisites
 
-* C (?)
-* Raylib
+We are using C and [raylib](https://www.raylib.com/), so only the
+following should be needed (debian-style names):
+
+* gcc
+* make
+* libx11-dev
+
+# Compiling and Running
+
+Compile with
+
+```
+make compile
+```
+
+and run with
+
+```
+make run
+```
