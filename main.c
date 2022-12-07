@@ -40,12 +40,11 @@ typedef struct ProjectilesContainer {
 typedef struct Block {
   Vector2 start;
   Vector2 size;
+  bool enabled;
 } Block;
 
 typedef struct Room {
   Block *blocks;
-  int x;
-  int y;
   bool enabled;
   Color color;
 } Room;
@@ -273,48 +272,45 @@ int move(Player *player, Room room, int roomIdx) {
   }
 }
 
-Block* makeWall(bool* adjacentDoors) {
-  Block* blocks = malloc(8 * sizeof *blocks);
+Block *makeWall(bool *adjacentDoors) {
+  Block *blocks = malloc(8 * sizeof *blocks);
   blocks[0] = (Block){
-    (Vector2){0, 0},
-    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
-	      WALL_THICKNESS}};
+      (Vector2){0, 0},
+      (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
+                WALL_THICKNESS}};
   blocks[1] = (Block){
-    (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[0]),
-	      0},
-    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
-	      WALL_THICKNESS}};
+      (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[0]), 0},
+      (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[0]),
+                WALL_THICKNESS}};
   // Left border
-  blocks[2] =
-    (Block){(Vector2){0, 0},
-	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-		      ((DOORSIZE / 2) * adjacentDoors[1])}};
-  blocks[3] =
-    (Block){(Vector2){0, (SCREEN_HEIGHT / 2) +
-		      ((DOORSIZE / 2) * adjacentDoors[1])},
-	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-		      ((DOORSIZE / 2) * adjacentDoors[1])}};
+  blocks[2] = (Block){
+      (Vector2){0, 0},
+      (Vector2){WALL_THICKNESS,
+                (SCREEN_HEIGHT / 2) - ((DOORSIZE / 2) * adjacentDoors[1])}};
+  blocks[3] = (Block){
+      (Vector2){0, (SCREEN_HEIGHT / 2) + ((DOORSIZE / 2) * adjacentDoors[1])},
+      (Vector2){WALL_THICKNESS,
+                (SCREEN_HEIGHT / 2) - ((DOORSIZE / 2) * adjacentDoors[1])}};
   // Bottom border
   blocks[4] = (Block){
-    (Vector2){0, SCREEN_HEIGHT - WALL_THICKNESS},
-    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
-	      WALL_THICKNESS}};
+      (Vector2){0, SCREEN_HEIGHT - WALL_THICKNESS},
+      (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
+                WALL_THICKNESS}};
   blocks[5] = (Block){
-    (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[2]),
-	      SCREEN_HEIGHT - WALL_THICKNESS},
-    (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
-	      WALL_THICKNESS}};
+      (Vector2){(SCREEN_WIDTH / 2) + ((DOORSIZE / 2) * adjacentDoors[2]),
+                SCREEN_HEIGHT - WALL_THICKNESS},
+      (Vector2){(SCREEN_WIDTH / 2) - ((DOORSIZE / 2) * adjacentDoors[2]),
+                WALL_THICKNESS}};
   // Right border
-  blocks[6] =
-    (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS, 0},
-	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-		      ((DOORSIZE / 2) * adjacentDoors[3])}};
-  blocks[7] =
-    (Block){(Vector2){SCREEN_WIDTH - WALL_THICKNESS,
-		      (SCREEN_HEIGHT / 2) +
-		      ((DOORSIZE / 2) * adjacentDoors[3])},
-	    (Vector2){WALL_THICKNESS, (SCREEN_HEIGHT / 2) -
-		      ((DOORSIZE / 2) * adjacentDoors[3])}};
+  blocks[6] = (Block){
+      (Vector2){SCREEN_WIDTH - WALL_THICKNESS, 0},
+      (Vector2){WALL_THICKNESS,
+                (SCREEN_HEIGHT / 2) - ((DOORSIZE / 2) * adjacentDoors[3])}};
+  blocks[7] = (Block){
+      (Vector2){SCREEN_WIDTH - WALL_THICKNESS,
+                (SCREEN_HEIGHT / 2) + ((DOORSIZE / 2) * adjacentDoors[3])},
+      (Vector2){WALL_THICKNESS,
+                (SCREEN_HEIGHT / 2) - ((DOORSIZE / 2) * adjacentDoors[3])}};
   return blocks;
 }
 
@@ -322,10 +318,23 @@ Block makeBlock(int x, int y) {
   int realX = WALL_THICKNESS + x * BLOCK_SIZE;
   int realY = WALL_THICKNESS + y * BLOCK_SIZE;
   Block b = {
-    (Vector2){realX, realY},
-    (Vector2){BLOCK_SIZE, BLOCK_SIZE},
+      (Vector2){realX, realY},
+      (Vector2){BLOCK_SIZE, BLOCK_SIZE},
   };
   return b;
+}
+
+Room makeRoom(bool up, bool down, bool left, bool right, Color color) {
+  bool adjacentDoors[4] = {up, left, down, right};
+  Block *blocks = malloc(MAX_BLOCKS * sizeof *blocks);
+  Block *walls = makeWall(adjacentDoors);
+  for (int i = 0; i < 8; i++) {
+    blocks[i] = walls[i];
+  }
+  blocks[9] = makeBlock(3, 5);
+  blocks[10] = makeBlock(3, 1);
+  Room room = {blocks, 1, color};
+  return room;
 }
 
 int main(void) {
@@ -377,18 +386,7 @@ int main(void) {
         if (realIdx < R * (R - 1)) {
           down = rooms[realIdx + R];
         }
-
-        bool adjacentDoors[4] = {up, left, down, right};
-
-        Block *blocks = malloc(MAX_BLOCKS * sizeof *blocks);
-	Block* walls = makeWall(adjacentDoors);
-	for(int i = 0; i < 8; i++) {
-	  blocks[i] = walls[i];
-	}
-        blocks[8] = makeBlock(1,1);
-	blocks[9] = makeBlock(3,5);
-	blocks[10] = makeBlock(3, 1);
-        Room room = {blocks, i, j, 1, roomCols[realIdx]};
+        Room room = makeRoom(up, down, left, right, RED);
         map[realIdx] = room;
       }
     }
@@ -434,7 +432,7 @@ int main(void) {
 
   // de-init
   // How much should be freed???
-  for(int i = 0; i < R * R; i++) {
+  for (int i = 0; i < R * R; i++) {
     free(map[i].blocks);
   }
   free(map);
