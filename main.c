@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,11 +9,13 @@
 #define R 3
 #define SCALE 2.0
 #define WALL_THICKNESS (9 * SCALE)
-#define DOORSIZE (70 * SCALE)
 #define BLOCK_SIZE (50 * SCALE)
+#define DOORSIZE BLOCK_SIZE
 #define STARTING_PLAYER_RADIUS ((BLOCK_SIZE / 2) - SCALE)
-#define SCREEN_WIDTH (BLOCK_SIZE * 11 + WALL_THICKNESS * 2)
-#define SCREEN_HEIGHT (BLOCK_SIZE * 7 + WALL_THICKNESS * 2)
+#define TILES_X 11
+#define TILES_Y 7
+#define SCREEN_WIDTH (BLOCK_SIZE * TILES_X + WALL_THICKNESS * 2)
+#define SCREEN_HEIGHT (BLOCK_SIZE * TILES_Y + WALL_THICKNESS * 2)
 
 typedef struct Projectile {
   Vector2 position;
@@ -70,7 +73,7 @@ void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
       DrawCircleV(p.position, p.radius, BLUE);
   }
   // draw border and other blocks
-  for (int i = 0; i < MAX_BLOCKS; i++) {
+  for (int i = 0; i < 8 + TILES_X * TILES_Y; i++) {
     Block b = room.blocks[i];
     DrawRectangle(b.start.x, b.start.y, b.size.x, b.size.y, YELLOW);
   }
@@ -155,7 +158,7 @@ int move(Player *player, Room room, int roomIdx) {
   int forceY = 0;
   int rad = player->radius;
 
-  for (int i = 0; i < MAX_BLOCKS; i++) {
+  for (int i = 0; i < 8 + TILES_X * TILES_Y; i++) {
     Block b = room.blocks[i];
     int bStartX = b.start.x;
     int bStartY = b.start.y;
@@ -326,13 +329,106 @@ Block makeBlock(int x, int y) {
 
 Room makeRoom(bool up, bool down, bool left, bool right, Color color) {
   bool adjacentDoors[4] = {up, left, down, right};
-  Block *blocks = malloc(MAX_BLOCKS * sizeof *blocks);
+  Block *blocks = malloc((8 + TILES_X * TILES_Y) * sizeof *blocks);
   Block *walls = makeWall(adjacentDoors);
   for (int i = 0; i < 8; i++) {
     blocks[i] = walls[i];
   }
-  blocks[9] = makeBlock(3, 5);
-  blocks[10] = makeBlock(3, 1);
+  // TODO read from file and POGulate blocks from 8 and up
+  bool blockConfig[TILES_X * TILES_Y] = {
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+  };
+  for (int i = 8; i < TILES_X * TILES_Y + 8; i++) {
+    // read line
+    bool enabled = blockConfig[i - 8];
+    if (enabled) {
+      int x = (i - 8) % TILES_X;
+      int y = (int)floor((i - 8) / TILES_X);
+      blocks[i] = makeBlock(x, y);
+    }
+  }
   Room room = {blocks, 1, color};
   return room;
 }
