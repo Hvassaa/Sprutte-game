@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_PROJECTILES 50
 #define MAX_BLOCKS 50
@@ -74,8 +75,14 @@ void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
   }
   // draw border and other blocks
   for (int i = 0; i < 8 + TILES_X * TILES_Y; i++) {
+    Color color;
+    if (i < 8) {
+      color = YELLOW;
+    } else {
+      color = GRAY;
+    }
     Block b = room.blocks[i];
-    DrawRectangle(b.start.x, b.start.y, b.size.x, b.size.y, YELLOW);
+    DrawRectangle(b.start.x, b.start.y, b.size.x, b.size.y, color);
   }
 
   DrawFPS(11, 11);
@@ -327,6 +334,21 @@ Block makeBlock(int x, int y) {
   return b;
 }
 
+// read file with name "fname" and put it into buf
+void readRoom(char* fname, char* buf) {
+  const int tiles = TILES_X * TILES_Y;
+  FILE *file;
+  file = fopen("test.txt", "r");
+
+  if(file == NULL) {
+    perror("Failed reading file");
+    exit(1);
+  }
+  
+  fgets(buf, tiles + 1, file);
+  fclose(file);
+}
+
 Room makeRoom(bool up, bool down, bool left, bool right, Color color) {
   bool adjacentDoors[4] = {up, left, down, right};
   Block *blocks = malloc((8 + TILES_X * TILES_Y) * sizeof *blocks);
@@ -334,101 +356,20 @@ Room makeRoom(bool up, bool down, bool left, bool right, Color color) {
   for (int i = 0; i < 8; i++) {
     blocks[i] = walls[i];
   }
-  // TODO read from file and POGulate blocks from 8 and up
-  bool blockConfig[TILES_X * TILES_Y] = {
-    1,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
+  char *room_buf = malloc((TILES_X * TILES_Y + 1) * sizeof *room_buf);
+  readRoom("test.txt", room_buf);
 
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-
-    1,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1
-  };
   for (int i = 8; i < TILES_X * TILES_Y + 8; i++) {
     // read line
-    bool enabled = blockConfig[i - 8];
+    bool enabled = room_buf[i - 8] == *"1";
+    printf("%c\n", room_buf[i - 8]);
     if (enabled) {
       int x = (i - 8) % TILES_X;
       int y = (int)floor((i - 8) / TILES_X);
       blocks[i] = makeBlock(x, y);
     }
   }
+  free(room_buf);
   Room room = {blocks, 1, color};
   return room;
 }
