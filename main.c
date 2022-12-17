@@ -8,7 +8,7 @@
 #define MAX_PROJECTILES 50
 #define MAX_BLOCKS 50
 #define R 3
-#define SCALE 2.5
+#define SCALE 2.0
 #define WALL_THICKNESS (9 * SCALE)
 #define BLOCK_SIZE (50 * SCALE)
 #define DOORSIZE BLOCK_SIZE
@@ -53,18 +53,22 @@ typedef struct Room {
   Color color;
 } Room;
 
-void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
-            Room room) {
+void doDraw(Player player, Player enemy, Projectile projectiles[], Room room) {
   /*
-    Helper function to (re)draw everything, in the following order
-    - background
-    - map
-    - player
-    - projectiles
-    - blocks
-   */
+     Helper function to (re)draw everything, in the following order
+     - background
+     - map
+     - player
+     - enemy
+     - projectiles
+     - blocks
+     */
+  Vector2 playerPos = player.position;
+  int playerRadius = player.radius;
   BeginDrawing();
   ClearBackground(room.color);
+  // draw enemy
+  DrawCircleV(enemy.position, enemy.radius - 1, BLACK);
   // draw player
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
   // draw live projectiles
@@ -92,8 +96,8 @@ void doDraw(Vector2 playerPos, int playerRadius, Projectile projectiles[],
 void shoot(float xSpeed, float ySpeed, Vector2 origin,
            ProjectilesContainer *pc) {
   /*
-    Register a new projectile
-   */
+     Register a new projectile
+     */
   Projectile *p = &(pc->projectiles[pc->idx]);
   p->position = origin;
   p->speed = (Vector2){xSpeed, ySpeed};
@@ -144,21 +148,7 @@ void resetProjectiles(ProjectilesContainer *pc) {
   }
 }
 
-int move(Player *player, Room room, int roomIdx) {
-  Vector2 newPos = player->position;
-  if (IsKeyDown(KEY_D)) {
-    newPos.x += player->speed;
-  }
-  if (IsKeyDown(KEY_A)) {
-    newPos.x -= player->speed;
-  }
-  if (IsKeyDown(KEY_S)) {
-    newPos.y += player->speed;
-  }
-  if (IsKeyDown(KEY_W)) {
-    newPos.y -= player->speed;
-  }
-
+void updatePos(Player *player, Block *blocks, Vector2 newPos) {
   bool xAllowed = 1;
   bool yAllowed = 1;
   int forceX = 0;
@@ -166,7 +156,7 @@ int move(Player *player, Room room, int roomIdx) {
   int rad = player->radius;
 
   for (int i = 0; i < 8 + TILES_X * TILES_Y; i++) {
-    Block b = room.blocks[i];
+    Block b = blocks[i];
     int bStartX = b.start.x;
     int bStartY = b.start.y;
     int bEndX = b.start.x + b.size.x;
@@ -268,6 +258,24 @@ int move(Player *player, Room room, int roomIdx) {
   if (yChange != 0) {
     player->position.y = yChange;
   }
+}
+
+int playerMove(Player *player, Room room, int roomIdx) {
+  Vector2 newPos = player->position;
+  if (IsKeyDown(KEY_D)) {
+    newPos.x += player->speed;
+  }
+  if (IsKeyDown(KEY_A)) {
+    newPos.x -= player->speed;
+  }
+  if (IsKeyDown(KEY_S)) {
+    newPos.y += player->speed;
+  }
+  if (IsKeyDown(KEY_W)) {
+    newPos.y -= player->speed;
+  }
+
+  updatePos(player, room.blocks, newPos);
 
   if (player->position.x < 0) {
     return roomIdx - 1;
@@ -280,6 +288,20 @@ int move(Player *player, Room room, int roomIdx) {
   } else {
     return roomIdx;
   }
+}
+
+void enemyMove(Player *enemy, Vector2 playerPos, Block *blocks) {
+  float x = enemy->position.x;
+  float y = enemy->position.y;
+
+  float xDiff = playerPos.x - x;
+  float yDiff = playerPos.y - y;
+  int xSign = (xDiff > 0) - (xDiff < 0);
+  int ySign = (yDiff > 0) - (yDiff < 0);
+
+  Vector2 newPos = {(int)x + xSign * enemy->speed,
+                    (int)y + ySign * enemy->speed};
+  updatePos(enemy, blocks, newPos);
 }
 
 Block *makeWall(bool *adjacentDoors) {
@@ -335,16 +357,16 @@ Block makeBlock(int x, int y) {
 }
 
 // read file with name "fname" and put it into buf
-void readRoom(char* fname, char* buf) {
+void readRoom(char *fname, char *buf) {
   const int tiles = TILES_X * TILES_Y;
   FILE *file;
   file = fopen("test.txt", "r");
 
-  if(file == NULL) {
+  if (file == NULL) {
     perror("Failed reading file");
     exit(1);
   }
-  
+
   fgets(buf, tiles + 1, file);
   fclose(file);
 }
@@ -386,6 +408,13 @@ int main(void) {
                    8,
                    5.0f * SCALE};
 
+  Player enemy = {{(float)SCREEN_WIDTH / 1.5, (float)SCREEN_HEIGHT / 1.5},
+                  1.0f * SCALE,
+                  (playerRadius),
+                  8,
+                  8,
+                  5.0f * SCALE};
+
   // init projectile values
   Projectile ps[50];
   for (int i = 0; i < MAX_PROJECTILES; i++) {
@@ -396,8 +425,8 @@ int main(void) {
   // generate map
   // enabled rooms
   bool rooms[R * R] = {0, 0, 1, 1, 1, 1, 0, 1, 1};
-  Color roomCols[R * R] = {BLACK,   BLACK, LIGHTGRAY, PINK,  BEIGE,
-                           MAGENTA, BLACK, MAROON,    VIOLET};
+  // Color roomCols[R * R] = {BLACK,   BLACK, LIGHTGRAY, PINK,  BEIGE,
+  //                          MAGENTA, BLACK, MAROON,    VIOLET};
   Room *map = malloc((R * R) * sizeof *map);
 
   for (size_t i = 0; i < R; i++) {
@@ -434,13 +463,14 @@ int main(void) {
 
   // set up raylib
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sprutte Game");
+  /* ToggleFullscreen(); */
   SetTargetFPS(60);
 
   // Main game loop
   while (!WindowShouldClose()) // Detect window close button or ESC key
   {
     // Player movement
-    int a = move(&player, room, curRoom);
+    int a = playerMove(&player, room, curRoom);
     if (a != curRoom) {
       if (a == curRoom + 1) {
         player.position.x = 1;
@@ -463,8 +493,10 @@ int main(void) {
     // Update each projectile
     updateProjectiles(&pc);
 
+    // enemy movement
+    enemyMove(&enemy, player.position, room.blocks);
     // draw everything
-    doDraw(player.position, player.radius, pc.projectiles, room);
+    doDraw(player, enemy, pc.projectiles, room);
   }
 
   // de-init
