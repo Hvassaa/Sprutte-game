@@ -7,6 +7,7 @@
 
 #define MAX_PROJECTILES 50
 #define MAX_BLOCKS 50
+#define MAX_ENEMIES 50
 #define R 3
 #define SCALE 2.0
 #define WALL_THICKNESS (9 * SCALE)
@@ -26,14 +27,15 @@ typedef struct Projectile {
   bool enabled;
 } Projectile;
 
-typedef struct Player {
+typedef struct Character {
   Vector2 position;
   float speed;
   int radius;
   unsigned int firerate;
   unsigned int shotCharge;
   float shotSpeed;
-} Player;
+  bool alive;
+} Character;
 
 typedef struct ProjectilesContainer {
   Projectile *projectiles; // array
@@ -53,7 +55,8 @@ typedef struct Room {
   Color color;
 } Room;
 
-void doDraw(Player player, Player enemy, Projectile projectiles[], Room room) {
+void doDraw(Character player, Character enemies[], Projectile projectiles[],
+            Room room) {
   /*
      Helper function to (re)draw everything, in the following order
      - background
@@ -67,8 +70,13 @@ void doDraw(Player player, Player enemy, Projectile projectiles[], Room room) {
   int playerRadius = player.radius;
   BeginDrawing();
   ClearBackground(room.color);
-  // draw enemy
-  DrawCircleV(enemy.position, enemy.radius - 1, BLACK);
+  // draw enemies
+  for (int i = 0; i < MAX_ENEMIES; i++) {
+    Character enemy = enemies[i];
+    if (enemy.alive) {
+      DrawCircleV(enemy.position, enemy.radius - 1, BLACK);
+    }
+  }
   // draw player
   DrawCircleV(playerPos, playerRadius - 1, GREEN);
   // draw live projectiles
@@ -107,7 +115,7 @@ void shoot(float xSpeed, float ySpeed, Vector2 origin,
   pc->idx = (pc->idx + 1) % MAX_PROJECTILES;
 }
 
-void playerShoot(Player *player, ProjectilesContainer *pc) {
+void playerShoot(Character *player, ProjectilesContainer *pc) {
   if (player->shotCharge >= player->firerate) {
     float speed = player->shotSpeed;
     if (IsKeyDown(KEY_RIGHT)) {
@@ -148,7 +156,7 @@ void resetProjectiles(ProjectilesContainer *pc) {
   }
 }
 
-void updatePos(Player *player, Block *blocks, Vector2 newPos) {
+void updatePos(Character *player, Block *blocks, Vector2 newPos) {
   bool xAllowed = 1;
   bool yAllowed = 1;
   int forceX = 0;
@@ -260,7 +268,7 @@ void updatePos(Player *player, Block *blocks, Vector2 newPos) {
   }
 }
 
-int playerMove(Player *player, Room room, int roomIdx) {
+int playerMove(Character *player, Room room, int roomIdx) {
   Vector2 newPos = player->position;
   if (IsKeyDown(KEY_D)) {
     newPos.x += player->speed;
@@ -290,18 +298,20 @@ int playerMove(Player *player, Room room, int roomIdx) {
   }
 }
 
-void enemyMove(Player *enemy, Vector2 playerPos, Block *blocks) {
-  float x = enemy->position.x;
-  float y = enemy->position.y;
+void enemyMove(Character *enemy, Vector2 playerPos, Block *blocks) {
+  if (enemy->alive) {
+    float x = enemy->position.x;
+    float y = enemy->position.y;
 
-  float xDiff = playerPos.x - x;
-  float yDiff = playerPos.y - y;
-  int xSign = (xDiff > 0) - (xDiff < 0);
-  int ySign = (yDiff > 0) - (yDiff < 0);
+    float xDiff = playerPos.x - x;
+    float yDiff = playerPos.y - y;
+    int xSign = (xDiff > 0) - (xDiff < 0);
+    int ySign = (yDiff > 0) - (yDiff < 0);
 
-  Vector2 newPos = {(int)x + xSign * enemy->speed,
-                    (int)y + ySign * enemy->speed};
-  updatePos(enemy, blocks, newPos);
+    Vector2 newPos = {(int)x + xSign * enemy->speed,
+                      (int)y + ySign * enemy->speed};
+    updatePos(enemy, blocks, newPos);
+  }
 }
 
 Block *makeWall(bool *adjacentDoors) {
@@ -384,7 +394,6 @@ Room makeRoom(bool up, bool down, bool left, bool right, Color color) {
   for (int i = 8; i < TILES_X * TILES_Y + 8; i++) {
     // read line
     bool enabled = room_buf[i - 8] == *"1";
-    printf("%c\n", room_buf[i - 8]);
     if (enabled) {
       int x = (i - 8) % TILES_X;
       int y = (int)floor((i - 8) / TILES_X);
@@ -401,22 +410,36 @@ int main(void) {
   int playerRadius = STARTING_PLAYER_RADIUS;
 
   // init player values
-  Player player = {{(float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2},
-                   2.0f * SCALE,
-                   (playerRadius),
-                   8,
-                   8,
-                   5.0f * SCALE};
+  Character player = {{(float)SCREEN_WIDTH / 2, (float)SCREEN_HEIGHT / 2},
+                      2.0f * SCALE,
+                      (playerRadius),
+                      8,
+                      8,
+                      5.0f * SCALE,
+                      true};
 
-  Player enemy = {{(float)SCREEN_WIDTH / 1.5, (float)SCREEN_HEIGHT / 1.5},
+  Character enemies[MAX_ENEMIES];
+  for (int i = 0; i < MAX_ENEMIES; i++) {
+    enemies[i] =
+        (Character){{(float)SCREEN_WIDTH / 1.5, (float)SCREEN_HEIGHT / 1.5},
+                    1.0f * SCALE,
+                    (playerRadius),
+                    8,
+                    8,
+                    5.0f * SCALE,
+                    false};
+  }
+  enemies[0] =
+      (Character){{(float)SCREEN_WIDTH / 1.5, (float)SCREEN_HEIGHT / 1.5},
                   1.0f * SCALE,
                   (playerRadius),
                   8,
                   8,
-                  5.0f * SCALE};
+                  5.0f * SCALE,
+                  true};
 
   // init projectile values
-  Projectile ps[50];
+  Projectile ps[MAX_PROJECTILES];
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     ps[i] = (Projectile){(Vector2){0, 0}, (Vector2){0, 0}, 0, 0, 0};
   }
@@ -494,9 +517,11 @@ int main(void) {
     updateProjectiles(&pc);
 
     // enemy movement
-    enemyMove(&enemy, player.position, room.blocks);
+    for (size_t i = 0; i < 1; i++) {
+      enemyMove(&(enemies[i]), player.position, room.blocks);
+    }
     // draw everything
-    doDraw(player, enemy, pc.projectiles, room);
+    doDraw(player, enemies, pc.projectiles, room);
   }
 
   // de-init
