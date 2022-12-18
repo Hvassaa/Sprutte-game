@@ -163,7 +163,8 @@ void playerShoot(Character *player, ProjectilesContainer *pc) {
   }
 }
 
-void updateProjectiles(ProjectilesContainer *pc, Block blocks[]) {
+void updateProjectiles(ProjectilesContainer *pc, Block blocks[],
+                       Character enemies[]) {
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile *p = &(pc->projectiles[i]);
     if (p->enabled) {
@@ -176,8 +177,22 @@ void updateProjectiles(ProjectilesContainer *pc, Block blocks[]) {
         if (!(p->enabled)) {
           break;
         }
-        Vector2 bCollision = blockCollision(blocks[i], p->position, p->radius);
-        if (bCollision.x && bCollision.y) {
+        Vector2 collision = blockCollision(blocks[i], p->position, p->radius);
+        if (collision.x && collision.y) {
+          p->enabled = false;
+        }
+      }
+      // check for enemy collision
+      // TODO damage enenmy
+      // TODO also check for collision with player, if enemy shoots
+      for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (!(p->enabled)) {
+          break;
+        }
+        Character enemy = enemies[i];
+        bool collision = circleCollision(p->position, enemy.position, p->radius,
+                                         enemy.radius);
+        if (collision) {
           p->enabled = false;
         }
       }
@@ -555,7 +570,7 @@ int main(void) {
     playerShoot(&player, &pc);
 
     // Update each projectile
-    updateProjectiles(&pc, room.blocks);
+    updateProjectiles(&pc, room.blocks, enemies);
 
     // enemy movement
     for (size_t i = 0; i < 1; i++) {
