@@ -101,6 +101,10 @@ void doDraw(Character player, Character enemies[], Projectile projectiles[],
   EndDrawing();
 }
 
+/*
+ * check for collision with blocks
+ * returns a boolean Vector2 for collision on x and y
+ */
 Vector2 blockCollision(Block block, Vector2 pos, int rad) {
   int bStartX = block.start.x;
   int bStartY = block.start.y;
@@ -111,6 +115,19 @@ Vector2 blockCollision(Block block, Vector2 pos, int rad) {
   bool posInsideYInterval = pos.y < bEndY + rad && pos.y > bStartY - rad;
 
   return (Vector2){posInsideXInterval, posInsideYInterval};
+}
+
+bool circleCollision(Vector2 pos1, Vector2 pos2, int rad1, int rad2) {
+  //(R0 - R1)^2 <= (x0 - x1)^2 + (y0 - y1)^2 <= (R0 + R1)^2
+  int radsMinus = (rad1 - rad2);
+  int radsPlus = (rad1 + rad2);
+  int xs = (pos1.x - pos2.x);
+  int ys = (pos1.y - pos2.y);
+  int term1 = radsMinus * radsMinus;
+  int term2 = xs * xs + ys * ys;
+  int term3 = radsPlus * radsPlus;
+
+  return (term1 <= term2) && (term2 <= term3);
 }
 
 void shoot(float xSpeed, float ySpeed, Vector2 origin,
@@ -316,19 +333,24 @@ int playerMove(Character *player, Room room, int roomIdx) {
   }
 }
 
-void enemyMove(Character *enemy, Vector2 playerPos, Block *blocks) {
+void enemyMove(Character *enemy, Character player, Block *blocks) {
   if (enemy->alive) {
     float x = enemy->position.x;
     float y = enemy->position.y;
 
-    float xDiff = playerPos.x - x;
-    float yDiff = playerPos.y - y;
+    float xDiff = player.position.x - x;
+    float yDiff = player.position.y - y;
     int xSign = (xDiff > 0) - (xDiff < 0);
     int ySign = (yDiff > 0) - (yDiff < 0);
 
     Vector2 newPos = {(int)x + xSign * enemy->speed,
                       (int)y + ySign * enemy->speed};
-    updatePos(enemy, blocks, newPos);
+    // dont move if colliding with player
+    // subtract SCALE * 8 from radius, to let them "touch more" ;-)
+    if (!circleCollision(newPos, player.position, enemy->radius - SCALE * 8,
+                         player.radius)) {
+      updatePos(enemy, blocks, newPos);
+    }
   }
 }
 
@@ -537,7 +559,7 @@ int main(void) {
 
     // enemy movement
     for (size_t i = 0; i < 1; i++) {
-      enemyMove(&(enemies[i]), player.position, room.blocks);
+      enemyMove(&(enemies[i]), player, room.blocks);
     }
     // draw everything
     doDraw(player, enemies, pc.projectiles, room);
