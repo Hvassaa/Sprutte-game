@@ -46,7 +46,7 @@ typedef struct ProjectilesContainer {
 typedef struct Block {
   Vector2 start;
   Vector2 size;
-  bool enabled;
+  // bool enabled;
 } Block;
 
 typedef struct Room {
@@ -370,7 +370,7 @@ Block makeBlock(int x, int y) {
 void readRoom(char *fname, char *buf) {
   const int tiles = TILES_X * TILES_Y;
   FILE *file;
-  file = fopen("test.txt", "r");
+  file = fopen(fname, "r");
 
   if (file == NULL) {
     perror("Failed reading file");
@@ -396,7 +396,8 @@ Room makeRoom(bool up, bool down, bool left, bool right, Color color) {
     bool enabled = room_buf[i - 8] == *"1";
     if (enabled) {
       int x = (i - 8) % TILES_X;
-      int y = (int)floor((i - 8) / TILES_X);
+      int y = ((i - 8) / TILES_X);
+      // int y = (int)floor((i - 8) / TILES_X);
       blocks[i] = makeBlock(x, y);
     }
   }
@@ -457,7 +458,7 @@ int main(void) {
       int realIdx = R * i + j;
       bool enabled = rooms[realIdx];
       if (!enabled) {
-        map[realIdx] = (Room){NULL, i, j, 0};
+        map[realIdx] = (Room){NULL, false, RED};
       } else {
         bool up = 0;
         bool down = 0;
