@@ -6,7 +6,6 @@
 #include <string.h>
 
 #define MAX_PROJECTILES 50
-#define MAX_BLOCKS 50
 #define MAX_ENEMIES 50
 #define R 3
 #define SCALE 2.0
@@ -16,6 +15,7 @@
 #define STARTING_PLAYER_RADIUS ((BLOCK_SIZE / 2) - 10 * SCALE)
 #define TILES_X 11
 #define TILES_Y 7
+#define MAX_BLOCKS (8 + TILES_X * TILES_Y)
 #define SCREEN_WIDTH (BLOCK_SIZE * TILES_X + WALL_THICKNESS * 2)
 #define SCREEN_HEIGHT (BLOCK_SIZE * TILES_Y + WALL_THICKNESS * 2)
 
@@ -101,6 +101,18 @@ void doDraw(Character player, Character enemies[], Projectile projectiles[],
   EndDrawing();
 }
 
+Vector2 blockCollision(Block block, Vector2 pos, int rad) {
+  int bStartX = block.start.x;
+  int bStartY = block.start.y;
+  int bEndX = block.start.x + block.size.x;
+  int bEndY = block.start.y + block.size.y;
+
+  bool posInsideXInterval = pos.x < bEndX + rad && pos.x > bStartX - rad;
+  bool posInsideYInterval = pos.y < bEndY + rad && pos.y > bStartY - rad;
+
+  return (Vector2){posInsideXInterval, posInsideYInterval};
+}
+
 void shoot(float xSpeed, float ySpeed, Vector2 origin,
            ProjectilesContainer *pc) {
   /*
@@ -134,13 +146,23 @@ void playerShoot(Character *player, ProjectilesContainer *pc) {
   }
 }
 
-void updateProjectiles(ProjectilesContainer *pc) {
+void updateProjectiles(ProjectilesContainer *pc, Block blocks[]) {
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     Projectile *p = &(pc->projectiles[i]);
     if (p->enabled) {
       if (p->lifeTime == 0) { // disable if lifetime ran out
-        p->enabled = 0;
+        p->enabled = false;
         continue;
+      }
+      // check for collision with blocks
+      for (int i = 0; i < MAX_BLOCKS; i++) {
+        if (!(p->enabled)) {
+          break;
+        }
+        Vector2 bCollision = blockCollision(blocks[i], p->position, p->radius);
+        if (bCollision.x && bCollision.y) {
+          p->enabled = false;
+        }
       }
       p->position.x += p->speed.x;
       p->position.y += p->speed.y;
@@ -169,15 +191,13 @@ void updatePos(Character *player, Block *blocks, Vector2 newPos) {
     int bStartY = b.start.y;
     int bEndX = b.start.x + b.size.x;
     int bEndY = b.start.y + b.size.y;
+    Vector2 newPosCollision = blockCollision(b, newPos, rad);
 
     // colliding from left or right
     // if player center is not within Y-interval, allow sliding around corner
     bool playerOverBottomOfBlock = player->position.y < bEndY + rad;
     bool playerUnderTopOfBlock = player->position.y > bStartY - rad;
-    bool newPosInsideXInterval =
-        newPos.x < bEndX + rad && newPos.x > bStartX - rad;
-    if (playerOverBottomOfBlock && playerUnderTopOfBlock &&
-        newPosInsideXInterval) {
+    if (playerOverBottomOfBlock && playerUnderTopOfBlock && newPosCollision.x) {
       bool playerCenterBelowBlock = newPos.y > bEndY;
       bool playerCenterAboveBlock = newPos.y < bStartY;
       if (playerCenterBelowBlock) {
@@ -195,10 +215,8 @@ void updatePos(Character *player, Block *blocks, Vector2 newPos) {
     // if player center is not within X-interval, allow sliding around corner
     bool playerLeftOfRightBlockSide = player->position.x < bEndX + rad;
     bool playerRightOfLeftBlockSide = player->position.x > bStartX - rad;
-    bool newPosInsideYInterval =
-        newPos.y < bEndY + rad && newPos.y > bStartY - rad;
     if (playerLeftOfRightBlockSide && playerRightOfLeftBlockSide &&
-        newPosInsideYInterval) {
+        newPosCollision.y) {
       bool playerCenterRightOfBlock = newPos.x > bEndX;
       bool playerCenterLeftOfBlock = newPos.x < bStartX;
       if (playerCenterRightOfBlock) {
@@ -515,7 +533,7 @@ int main(void) {
     playerShoot(&player, &pc);
 
     // Update each projectile
-    updateProjectiles(&pc);
+    updateProjectiles(&pc, room.blocks);
 
     // enemy movement
     for (size_t i = 0; i < 1; i++) {
